@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, Camera, ListChecks, MessageSquare } from "lucide-react";
 import { PortalShell, type NavItem } from "@/components/portal/PortalShell";
-import { RoleGate } from "../_authenticated";
+import { RoleGate } from "./_authenticated";
 
 const items: NavItem[] = [
   { to: "/field", label: "Today", icon: LayoutDashboard },

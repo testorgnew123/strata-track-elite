@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, FolderKanban, Users, FileSearch } from "lucide-react";
 import { PortalShell, type NavItem } from "@/components/portal/PortalShell";
-import { RoleGate } from "../_authenticated";
+import { RoleGate } from "./_authenticated";
 
 const items: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },

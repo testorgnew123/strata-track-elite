@@ -10,7 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { PortalShell, type NavItem } from "@/components/portal/PortalShell";
-import { RoleGate } from "../_authenticated";
+import { RoleGate } from "./_authenticated";
 
 const items: NavItem[] = [
   { to: "/portal", label: "Overview", icon: LayoutDashboard },
