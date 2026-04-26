@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { projectStatusLabel } from "@/lib/portal-data";
@@ -136,27 +136,29 @@ function AdminProjects() {
       ) : (
         <div className="grid gap-3">
           {projects.map((p) => (
-            <Card key={p.id} className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{p.code}</p>
-                  <h3 className="font-display text-lg text-navy-deep">{p.name}</h3>
-                  {p.client_display_name && (
-                    <p className="text-xs text-muted-foreground">{p.client_display_name}</p>
+            <Link key={p.id} to="/admin/projects/$projectId" params={{ projectId: p.id }}>
+              <Card className="p-5 transition-colors hover:border-gold/40">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{p.code}</p>
+                    <h3 className="font-display text-lg text-navy-deep">{p.name}</h3>
+                    {p.client_display_name && (
+                      <p className="text-xs text-muted-foreground">{p.client_display_name}</p>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="capitalize">
+                    {projectStatusLabel[p.status] ?? p.status}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{p.progress_percent}%</span>
+                  {p.expected_handover_date && (
+                    <span>Handover: {new Date(p.expected_handover_date).toLocaleDateString()}</span>
                   )}
                 </div>
-                <Badge variant="secondary" className="capitalize">
-                  {projectStatusLabel[p.status] ?? p.status}
-                </Badge>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                <span>{p.progress_percent}%</span>
-                {p.expected_handover_date && (
-                  <span>Handover: {new Date(p.expected_handover_date).toLocaleDateString()}</span>
-                )}
-              </div>
-              <Progress value={p.progress_percent} className="mt-2 h-1.5" />
-            </Card>
+                <Progress value={p.progress_percent} className="mt-2 h-1.5" />
+              </Card>
+            </Link>
           ))}
         </div>
       )}
