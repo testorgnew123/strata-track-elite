@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import loginVisual from "@/assets/login-visual.jpg";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
