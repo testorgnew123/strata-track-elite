@@ -4,6 +4,7 @@ import { Camera, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
+import { watermarkImage } from "@/lib/watermark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +45,16 @@ function UploadPage() {
       setSubmitting(false);
       return toast.error("No project assigned");
     }
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${project.id}/${Date.now()}.${ext}`;
+    let toUpload: File = file;
+    try {
+      toUpload = await watermarkImage(file, project.code ?? "PROJECT");
+    } catch {
+      // fall back to original file if watermarking fails
+    }
+    const path = `${project.id}/${Date.now()}.jpg`;
     const { error: upErr } = await supabase.storage
       .from("progress-photos")
-      .upload(path, file, { contentType: file.type });
+      .upload(path, toUpload, { contentType: toUpload.type });
     if (upErr) {
       setSubmitting(false);
       return toast.error(upErr.message);
