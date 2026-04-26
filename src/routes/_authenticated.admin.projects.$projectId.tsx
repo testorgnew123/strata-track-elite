@@ -64,7 +64,15 @@ function ProjectDetail() {
 
   const profileOf = (uid: string) => profiles.find((p) => p.id === uid);
 
-  const updateField = async (patch: Record<string, any>) => {
+  const updateField = async (
+    patch: Partial<{
+      name: string;
+      client_display_name: string;
+      address: string;
+      status: "planning" | "in_progress" | "on_hold" | "handover" | "completed";
+      progress_percent: number;
+    }>,
+  ) => {
     setSaving(true);
     const { error } = await supabase.from("projects").update(patch).eq("id", projectId);
     setSaving(false);
