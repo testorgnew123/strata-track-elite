@@ -1,170 +1,108 @@
-# Pivot: Portal-Only Tracking Application
 
-SingleStop's marketing site already exists elsewhere. This product becomes a **dedicated secure client portal** — think `track.singlestop.com`. No public marketing surface, no SEO, no testimonials. Just login → portal.
+# Finish remaining portal phases
 
----
+## What's still incomplete (audit summary)
 
-## 1. Remove all marketing surface
-
-**Delete routes:**
-- `src/routes/about.tsx`
-- `src/routes/services.tsx`
-- `src/routes/projects.tsx` (the public marketing one — real `/projects` lives inside the portal)
-- `src/routes/contact.tsx`
-
-**Delete marketing components & assets:**
-- `src/components/marketing/MarketingHeader.tsx`
-- `src/components/marketing/MarketingFooter.tsx`
-- `src/components/marketing/MarketingLayout.tsx`
-- `src/assets/hero-construction.jpg`, `gallery-1/2/3.jpg` (keep `login-visual.jpg`)
-
-**Strip SEO from `__root.tsx`:**
-- Remove og:title, og:description, twitter cards, sitemap-style metadata.
-- Add `<meta name="robots" content="noindex, nofollow">` globally.
-- Title: `SingleStop Client Portal`.
-
-**Replace `src/routes/index.tsx`:**
-- No landing page. `beforeLoad` redirects:
-  - If authenticated → `/portal` (role-aware: client → `/portal`, engineer → `/field`, admin → `/admin`).
-  - If not → `/login`.
+| Area | Status |
+|---|---|
+| 3 routes from plan: `/portal/reports`, `/admin/projects/$projectId`, `/admin/notifications` | ❌ missing |
+| PDF report generation (`pdf-lib`) | ❌ missing |
+| Email notifications (was HostGator, now Resend) | ❌ missing |
+| Reminder cron (stale milestones / visits) | ❌ missing |
+| Handover rating + referral UI | ❌ missing (tables exist, no UI) |
+| Engineer photo watermarking | ❌ missing |
+| Admin project CRUD + user invite flow | ❌ missing |
+| Phase 8 polish + linter sweep | ❌ missing |
 
 ---
 
-## 2. Login experience (refined, not marketing)
+## 1. Missing routes (3 new files)
 
-Keep `/login` and `/forgot-password` as the only **public** routes. Tighten copy so it reads as enterprise portal access, not lead capture:
+- **`src/routes/_authenticated.portal.reports.tsx`** — Lists generated reports for the client's project, with a "Download progress report" button that calls an edge function and streams a branded PDF.
+- **`src/routes/_authenticated.admin.projects.$projectId.tsx`** — Project detail drill-in: edit name/code/status/dates/cover, manage team members (add/remove engineer & client), milestone timeline summary, recent progress, danger-zone archive.
+- **`src/routes/_authenticated.admin.notifications.tsx`** — Notification templates (subject + HTML body, per event), test-send button, recent send log.
 
-- Remove "Don't have an account? Request access" link to `/contact` (contact route is gone). Replace with: *"Account issues? Contact your project manager."* — plain text, no link.
-- Visual panel keeps the luxury imagery + brandmark, but copy shifts to:
-  > "Secure access to your SingleStop project. Daily progress, milestones, and documents — in one place."
-- Footer line: `Authorized users only · End-to-end encrypted`.
+## 2. Admin: project & user CRUD
 
----
+- Upgrade `_authenticated.admin.projects.tsx` with a **Create project** dialog and per-row Edit/Open actions.
+- Upgrade `_authenticated.admin.users.tsx` with an **Invite user** dialog (email, full name, mobile, role, optional project).
+- New edge function `admin-invite-user` (service role): creates auth user with temp password, inserts profile + role + optional project_member, emails the invitee via Resend.
 
-## 3. Portal architecture (authenticated only)
+## 3. PDF report generation
 
-All app routes live under a pathless `_authenticated` layout that enforces session via `beforeLoad`. Role-based child layouts split the experience.
+- New edge function **`generate-project-report`** using `pdf-lib`:
+  - Brandmark + project name/code header
+  - Project meta block (status, % complete, expected handover, address)
+  - Milestone timeline table
+  - Last 6 progress photos as a 2×3 thumbnail grid (signed URLs from Storage)
+  - Footer with timestamp + "Generated for {client}"
+- Streams as download. Wired to `/portal/reports` and to `/admin/projects/$projectId`.
 
-```
-src/routes/
-  __root.tsx                          (minimal shell, noindex)
-  index.tsx                           (redirect-only)
-  login.tsx                           (public)
-  forgot-password.tsx                 (public)
-  _authenticated.tsx                  (session guard + PortalShell)
-  _authenticated/index.tsx            (role router → /portal | /field | /admin)
+## 4. Email notifications via Resend
 
-  # Client portal
-  _authenticated/portal.tsx                        (client layout)
-  _authenticated/portal/index.tsx                  (project overview / dashboard)
-  _authenticated/portal/progress.tsx               (photo gallery + filters)
-  _authenticated/portal/milestones.tsx             (timeline + acknowledge)
-  _authenticated/portal/documents.tsx              (PDFs, floor plans, contracts)
-  _authenticated/portal/queries.tsx                (support / questions thread)
-  _authenticated/portal/visits.tsx                 (site visit scheduler)
-  _authenticated/portal/readiness.tsx              (handover checklist)
-  _authenticated/portal/reports.tsx                (download branded PDFs)
-  _authenticated/portal/settings.tsx               (profile, sessions, language)
+- Connect Resend through `standard_connectors--connect` (no manual API key).
+- New edge function **`send-notification-email`**: looks up recipient email from `auth.users`, renders a branded HTML template (navy/ivory/gold), POSTs to Resend through the Lovable gateway, logs to a new `email_log` table.
+- New Postgres trigger functions (SECURITY DEFINER, fixed search_path) to fan out notifications + emails:
+  - milestone marked `completed` → notify project clients
+  - new `query_replies` row → notify query author
+  - new `site_visits` request → notify admins
+  - project status → `handover` → notify client + insert handover-flow notification
+- Edge function **`send-reminders`** (cron-callable):
+  - Unacknowledged milestones >48h → reminder email
+  - `requested` visits >24h with no `confirmed_date` → reminder to admins
 
-  # Engineer field app (mobile-first)
-  _authenticated/field.tsx                         (bottom-nav layout)
-  _authenticated/field/index.tsx                   (today's project)
-  _authenticated/field/upload.tsx                  (camera/gallery upload + watermark)
-  _authenticated/field/milestones.tsx              (mark complete)
-  _authenticated/field/queries.tsx                 (respond to client)
+## 5. Handover flow UI
 
-  # Admin console
-  _authenticated/admin.tsx                         (sidebar layout)
-  _authenticated/admin/index.tsx                   (org dashboard)
-  _authenticated/admin/projects.tsx                (CRUD)
-  _authenticated/admin/projects.$projectId.tsx    (project detail / team / timeline)
-  _authenticated/admin/users.tsx                   (clients, engineers, admins)
-  _authenticated/admin/audit.tsx                   (audit log viewer)
-  _authenticated/admin/notifications.tsx           (templates + provider config)
-```
+- On `/portal/readiness` and `/portal/index`, when project status is `handover` or all readiness items are done:
+  - **Share your experience** card → 5-star rating + feedback (writes to `project_ratings`, one per client/project).
+  - After rating: **Refer a friend** card → name + contact + note (writes to `referrals`).
 
-Role guard pattern:
-```tsx
-// _authenticated.tsx
-beforeLoad: ({ context, location }) => {
-  if (!context.auth.isAuthenticated) {
-    throw redirect({ to: "/login", search: { redirect: location.href } });
-  }
-}
-```
-Sub-layouts (`portal.tsx`, `field.tsx`, `admin.tsx`) further check `context.auth.hasRole(...)` and redirect to the user's correct home.
+## 6. Engineer photo watermarking
+
+In `_authenticated.field.upload.tsx`, before upload:
+- Draw photo to `<canvas>`, overlay bottom-left "SS · {project_code}" and bottom-right `{taken_at}` in a semi-opaque navy bar with a gold rule
+- Re-encode JPEG (q=0.85), upload the watermarked blob
+- EXIF orientation respected via `createImageBitmap({ imageOrientation: 'from-image' })`
+
+## 7. Polish & verification (Phase 8)
+
+- Run `supabase--linter` and resolve any warnings introduced by new tables/triggers.
+- Empty states for portal reports, admin notifications, admin users.
+- Verify role-based redirect from `/` for each demo account.
+- Verify `noindex` still set in `__root.tsx`.
+- Smoke-test `bun run build` — must pass with zero TS errors.
 
 ---
 
-## 4. Premium portal shell (replaces MarketingLayout)
+## Database changes
 
-**`src/components/portal/PortalShell.tsx`** — the universal authenticated chrome:
-- Top bar: BrandMark (compact), current project switcher (clients with multiple), notification bell, user menu (profile, sessions, language, sign out).
-- Glass surface, subtle gold hairline divider, navy ink on ivory.
-- Desktop: left rail navigation (icons + labels) for client/admin.
-- Mobile: bottom tab bar for engineer; collapsible drawer for client.
+New tables (with RLS):
+- **`notification_templates`** — `kind`, `subject`, `html_body`, `text_body`, `updated_at`. Admin only.
+- **`email_log`** — `recipient_email`, `kind`, `subject`, `status` (queued/sent/failed), `provider_id`, `error`, `created_at`. Admin read; service role inserts.
 
-**Visual language carried over from the existing design system** (already in `styles.css`): Navy/Ivory/Gold OKLCH palette, Fraunces display, Inter body, glass panels, gold-divider rule, `animate-rise-in`.
+New trigger functions: `notify_on_milestone_completed`, `notify_on_query_reply`, `notify_on_site_visit_request`, `notify_on_handover_status` (each inserts into `notifications` and invokes the email edge function via `pg_net`).
 
----
+## New edge functions
 
-## 5. Footer / branding
+| Function | Auth | Purpose |
+|---|---|---|
+| `generate-project-report` | JWT verified | Returns PDF for caller's accessible project |
+| `admin-invite-user` | JWT + admin check | Creates auth user, profile, role, sends invite email |
+| `send-notification-email` | Internal (service role) | Sends one branded transactional email via Resend |
+| `send-reminders` | Cron / service role | Scans stale milestones & visits, emails reminders |
 
-- Remove `MarketingFooter` entirely.
-- Inside the portal shell, a slim footer line: `© {year} SingleStop · Authorized portal · v{appVersion}`.
-
----
-
-## 6. Backend & data (unchanged from prior approval)
-
-Reaffirming the stack already approved — no scope change here, just confirming it powers the portal:
-
-- **Neon Postgres** via `@neondatabase/serverless` in `src/server/db.ts`.
-- **Custom auth**: User ID / Mobile + password (scrypt), httpOnly refresh-token rotation, CSRF, 5 fails / 15-min lockout, session list + revoke + "log out everywhere".
-- **Roles**: `client`, `engineer`, `admin` in a separate `user_roles` table with a `has_role()` SECURITY DEFINER function pattern.
-- **Audit log**: every login, project edit, progress delete, milestone completion, document upload.
-- **Storage**: pluggable `src/server/storage.ts`; signed short-lived URLs for all media; optional client-side watermarking for engineer uploads.
-- **Notifications**: provider registry (HostGator SMTP relay first; WhatsApp pluggable later).
-- **PDF reports**: `pdf-lib` with logo, timeline, milestone summary, image thumbnails.
-- **Trust modules**: milestone acknowledgements, queries, site visits, readiness tracker, satisfaction rating + referral CTA at handover.
-
-No payments, invoices, quotations, or billing — anywhere.
+All use Resend through the Lovable Cloud connector gateway.
 
 ---
 
-## 7. SEO / discoverability
+## What this plan does NOT do
 
-- `robots: noindex, nofollow` at root.
-- No sitemap. No og:image. No social preview. This is a private application URL.
-- Title pattern: `{Page} · SingleStop Portal`.
+- No payments / billing, no marketing surface, no public signup re-enable.
+- No SMS / WhatsApp (email only — WhatsApp was always pluggable-later).
 
----
+## Required from you
 
-## 8. What this plan does NOT do (clarifications)
+1. Approve this plan.
+2. Approve the **Resend connection** when the connector picker appears.
 
-- Does not touch the existing public website at singlestop.com — that's separate.
-- Does not keep any of the marketing routes "just in case." They're deleted.
-- `/login` and `/forgot-password` remain public because they have to.
-
----
-
-## Phase order on approval
-
-1. **Cleanup** — delete marketing routes/components/assets, strip SEO, rewrite `/` as redirect, refine login copy.
-2. **Auth + Neon** — schema, scrypt, cookies, sessions, lockout, audit table. (Needs `NEON_DATABASE_URL`.)
-3. **Portal shell + role routing** — `_authenticated`, `portal`, `field`, `admin` layouts.
-4. **Client portal modules** — overview, progress gallery (with filters), milestones, documents, queries, visits, readiness, reports, settings.
-5. **Engineer field app** — mobile upload flow with watermark, milestone completion, query replies.
-6. **Admin console** — projects/users CRUD, audit viewer, notification config.
-7. **Notifications + PDF reports + handover flow** (rating + referral + reminders).
-8. **Polish & Netlify deploy verification.**
-
----
-
-## Required from you to start Phase 2
-
-1. **`NEON_DATABASE_URL`** (I'll request as a secret).
-2. **HostGator SMTP**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (+ I'll generate the relay script for HostGator).
-3. **SingleStop logo** (PNG/SVG, transparent if possible) for the portal header and PDF reports.
-
-Phase 1 (cleanup + portal-only pivot) needs nothing from you and can begin immediately on approval.
+Nothing else — no manual secrets, no DNS, no SMTP credentials. After approval I'll execute everything in a single pass, verify the build, and surface the demo logins so you can walk through each flow end-to-end.
