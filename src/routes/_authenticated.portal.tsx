@@ -7,6 +7,7 @@ import {
   MessageSquare,
   CalendarClock,
   ClipboardCheck,
+  Download,
   Settings,
 } from "lucide-react";
 import { PortalShell, type NavItem } from "@/components/portal/PortalShell";
@@ -20,6 +21,7 @@ const items: NavItem[] = [
   { to: "/portal/queries", label: "Queries", icon: MessageSquare },
   { to: "/portal/visits", label: "Site Visits", icon: CalendarClock },
   { to: "/portal/readiness", label: "Readiness", icon: ClipboardCheck },
+  { to: "/portal/reports", label: "Reports", icon: Download },
   { to: "/portal/settings", label: "Settings", icon: Settings },
 ];
 
