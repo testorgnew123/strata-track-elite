@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import loginVisual from "@/assets/login-visual.jpg";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
@@ -78,17 +78,15 @@ function VisualPanel() {
         <div className="max-w-lg animate-rise-in">
           <div className="gold-divider w-16" />
           <h2 className="mt-6 font-display text-4xl font-light leading-tight text-balance xl:text-5xl">
-            Your project, photographed and accounted for —
-            <em className="not-italic text-gold"> every single day.</em>
+            Secure access to your <em className="not-italic text-gold">SingleStop project</em>.
           </h2>
           <p className="mt-6 text-base leading-relaxed text-ivory/70">
-            Sign in to view today's site update, the latest milestones,
-            and your complete project archive.
+            Daily progress, milestones, and documents — in one place.
           </p>
         </div>
 
         <p className="text-xs uppercase tracking-[0.22em] text-ivory/50">
-          Secure portal · End-to-end encrypted
+          Authorized users only · End-to-end encrypted
         </p>
       </div>
     </aside>
@@ -98,29 +96,13 @@ function VisualPanel() {
 function FormPanel() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="flex items-center justify-between p-6 lg:hidden">
-        <Link to="/">
-          <BrandMark />
-        </Link>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground"
-        >
-          <ArrowLeft size={14} />
-          Home
-        </Link>
+      <div className="p-6 lg:hidden">
+        <BrandMark />
       </div>
 
       <div className="flex flex-1 items-center justify-center px-5 py-12 md:px-12 lg:py-0">
         <div className="w-full max-w-md animate-rise-in">
           <div className="mb-10 hidden lg:block">
-            <Link
-              to="/"
-              className="mb-8 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-navy-deep"
-            >
-              <ArrowLeft size={14} />
-              Back to home
-            </Link>
             <h1 className="font-display text-4xl font-light text-navy-deep">
               Welcome back.
             </h1>
@@ -152,10 +134,7 @@ function FormPanel() {
           </Tabs>
 
           <p className="mt-10 text-center text-xs text-muted-foreground">
-            Don't have an account?{" "}
-            <Link to="/contact" className="font-medium text-navy-deep underline-offset-4 hover:underline">
-              Request access
-            </Link>
+            Account issues? Contact your project manager.
           </p>
         </div>
       </div>

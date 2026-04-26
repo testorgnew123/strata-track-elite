@@ -14,14 +14,14 @@ function NotFoundComponent() {
           Page not found
         </h2>
         <p className="mt-3 text-sm text-muted-foreground">
-          The page you're looking for has moved or never existed.
+          The page you're looking for doesn't exist in your portal.
         </p>
         <div className="mt-7">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-navy-deep px-5 py-2.5 text-sm font-medium text-ivory transition-colors hover:bg-navy"
           >
-            Return Home
+            Return to portal
           </Link>
         </div>
       </div>
@@ -34,15 +34,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SingleStop Building Solutions" },
-      {
-        name: "description",
-        content:
-          "Premium construction services with full transparency through a dedicated client portal.",
-      },
-      { name: "author", content: "SingleStop Building Solutions" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { title: "SingleStop Client Portal" },
+      { name: "robots", content: "noindex, nofollow" },
       { name: "theme-color", content: "#0B1B33" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
