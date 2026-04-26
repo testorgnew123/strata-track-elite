@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,45 +10,23 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign In — SingleStop Client Portal" },
-      {
-        name: "description",
-        content:
-          "Secure sign-in for SingleStop clients, engineers, and admins. Use your User ID or registered mobile number.",
-      },
-      { name: "robots", content: "noindex" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: LoginPage,
 });
 
-const userIdSchema = z.object({
-  userId: z
-    .string()
-    .trim()
-    .min(3, "User ID is required")
-    .max(40)
-    .regex(/^[A-Z0-9_-]+$/i, "Letters, numbers, underscore or dash only"),
+const schema = z.object({
+  email: z.string().trim().email("Enter a valid email").max(120),
   password: z.string().min(6, "Password is required").max(128),
 });
-
-const mobileSchema = z.object({
-  mobile: z
-    .string()
-    .trim()
-    .min(7, "Mobile number is required")
-    .max(20)
-    .regex(/^[+0-9\s-]+$/, "Digits, +, spaces or dashes only"),
-  password: z.string().min(6, "Password is required").max(128),
-});
-
-type UserIdValues = z.infer<typeof userIdSchema>;
-type MobileValues = z.infer<typeof mobileSchema>;
+type Values = z.infer<typeof schema>;
 
 function LoginPage() {
   return (
@@ -64,16 +42,14 @@ function VisualPanel() {
     <aside className="relative hidden overflow-hidden lg:block">
       <img
         src={loginVisual}
-        alt="Luxury modern villa at twilight"
+        alt=""
         className="absolute inset-0 h-full w-full object-cover"
         width={1080}
         height={1920}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-navy-deep via-navy-deep/40 to-navy-deep/30" />
       <div className="relative flex h-full flex-col justify-between p-12 text-ivory">
-        <Link to="/" className="inline-flex">
-          <BrandMark variant="light" />
-        </Link>
+        <BrandMark variant="light" />
 
         <div className="max-w-lg animate-rise-in">
           <div className="gold-divider w-16" />
@@ -103,37 +79,22 @@ function FormPanel() {
       <div className="flex flex-1 items-center justify-center px-5 py-12 md:px-12 lg:py-0">
         <div className="w-full max-w-md animate-rise-in">
           <div className="mb-10 hidden lg:block">
-            <h1 className="font-display text-4xl font-light text-navy-deep">
-              Welcome back.
-            </h1>
-            <p className="mt-2 text-muted-foreground">
-              Sign in to your project portal.
-            </p>
+            <h1 className="font-display text-4xl font-light text-navy-deep">Welcome back.</h1>
+            <p className="mt-2 text-muted-foreground">Sign in to your project portal.</p>
           </div>
 
           <div className="lg:hidden">
-            <h1 className="font-display text-3xl font-light text-navy-deep">
-              Sign in
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Access your project portal.
-            </p>
+            <h1 className="font-display text-3xl font-light text-navy-deep">Sign in</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Access your project portal.</p>
           </div>
 
-          <Tabs defaultValue="userid" className="mt-8">
-            <TabsList className="grid w-full grid-cols-2 bg-secondary">
-              <TabsTrigger value="userid">User ID</TabsTrigger>
-              <TabsTrigger value="mobile">Mobile</TabsTrigger>
-            </TabsList>
-            <TabsContent value="userid" className="mt-6">
-              <UserIdForm />
-            </TabsContent>
-            <TabsContent value="mobile" className="mt-6">
-              <MobileForm />
-            </TabsContent>
-          </Tabs>
+          <div className="mt-8">
+            <LoginForm />
+          </div>
 
-          <p className="mt-10 text-center text-xs text-muted-foreground">
+          <DemoCard />
+
+          <p className="mt-8 text-center text-xs text-muted-foreground">
             Account issues? Contact your project manager.
           </p>
         </div>
@@ -146,149 +107,139 @@ function FormPanel() {
   );
 }
 
-function UserIdForm() {
+function LoginForm() {
   const [showPwd, setShowPwd] = useState(false);
-  const form = useForm<UserIdValues>({
-    resolver: zodResolver(userIdSchema),
-    defaultValues: { userId: "", password: "" },
+  const navigate = useNavigate();
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = async (values: UserIdValues) => {
-    // Will be wired to auth server function next phase
-    await new Promise((r) => setTimeout(r, 600));
-    toast.info(`Auth not connected yet. Received: ${values.userId}`);
+  const onSubmit = async (values: Values) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: values.email,
+      password: values.password,
+    });
+    if (error) {
+      toast.error(error.message || "Sign in failed");
+      return;
+    }
+    if (!data.user) {
+      toast.error("Sign in failed");
+      return;
+    }
+    // Determine role and redirect
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+    const roleSet = new Set((roles ?? []).map((r) => r.role));
+    const dest = roleSet.has("admin") ? "/admin" : roleSet.has("engineer") ? "/field" : "/portal";
+    toast.success("Welcome back");
+    navigate({ to: dest });
   };
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="userId">User ID</Label>
+        <Label htmlFor="email">Email</Label>
         <Input
-          id="userId"
-          placeholder="e.g. CLIENT2201"
-          autoCapitalize="characters"
-          autoComplete="username"
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@company.com"
           className="h-11"
-          {...form.register("userId")}
+          {...form.register("email")}
         />
-        {form.formState.errors.userId && (
-          <p className="text-xs text-destructive">{form.formState.errors.userId.message}</p>
+        {form.formState.errors.email && (
+          <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
         )}
       </div>
 
-      <PasswordField
-        register={form.register("password")}
-        error={form.formState.errors.password?.message}
-        show={showPwd}
-        onToggle={() => setShowPwd((v) => !v)}
-      />
-
-      <SubmitFooter loading={form.formState.isSubmitting} />
-    </form>
-  );
-}
-
-function MobileForm() {
-  const [showPwd, setShowPwd] = useState(false);
-  const form = useForm<MobileValues>({
-    resolver: zodResolver(mobileSchema),
-    defaultValues: { mobile: "", password: "" },
-  });
-
-  const onSubmit = async (values: MobileValues) => {
-    await new Promise((r) => setTimeout(r, 600));
-    toast.info(`Auth not connected yet. Received: ${values.mobile}`);
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="mobile">Mobile number</Label>
-        <Input
-          id="mobile"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="+91 98765 43210"
-          className="h-11"
-          {...form.register("mobile")}
-        />
-        {form.formState.errors.mobile && (
-          <p className="text-xs text-destructive">{form.formState.errors.mobile.message}</p>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <button
+            type="button"
+            onClick={() => toast.info("Contact your project manager to reset your password.")}
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-navy-deep"
+          >
+            Forgot?
+          </button>
+        </div>
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPwd ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="Your password"
+            className="h-11 pr-10"
+            {...form.register("password")}
+          />
+          <button
+            type="button"
+            aria-label={showPwd ? "Hide password" : "Show password"}
+            onClick={() => setShowPwd((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-navy-deep"
+          >
+            {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+        {form.formState.errors.password && (
+          <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
         )}
       </div>
 
-      <PasswordField
-        register={form.register("password")}
-        error={form.formState.errors.password?.message}
-        show={showPwd}
-        onToggle={() => setShowPwd((v) => !v)}
-      />
-
-      <SubmitFooter loading={form.formState.isSubmitting} />
+      <Button
+        type="submit"
+        disabled={form.formState.isSubmitting}
+        className="h-11 w-full bg-navy-deep text-ivory hover:bg-navy"
+      >
+        {form.formState.isSubmitting ? (
+          <>
+            <Loader2 className="animate-spin" />
+            Signing in…
+          </>
+        ) : (
+          "Sign In"
+        )}
+      </Button>
     </form>
   );
 }
 
-function PasswordField({
-  register,
-  error,
-  show,
-  onToggle,
-}: {
-  register: ReturnType<ReturnType<typeof useForm>["register"]>;
-  error?: string;
-  show: boolean;
-  onToggle: () => void;
-}) {
+const DEMO = [
+  { label: "Admin", email: "admin@demo.singlestop.com", password: "Demo@Admin2026" },
+  { label: "Engineer", email: "engineer@demo.singlestop.com", password: "Demo@Engg2026" },
+  { label: "Client", email: "client@demo.singlestop.com", password: "Demo@Client2026" },
+];
+
+function DemoCard() {
+  const copy = (e: string, p: string) => {
+    navigator.clipboard.writeText(`${e} / ${p}`);
+    toast.success("Credentials copied");
+  };
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="password">Password</Label>
-        <Link
-          to="/forgot-password"
-          className="text-xs font-medium text-muted-foreground transition-colors hover:text-navy-deep"
-        >
-          Forgot?
-        </Link>
+    <div className="mt-8 rounded-lg border border-gold/30 bg-gold/5 p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold">
+        Demo credentials
+      </p>
+      <div className="mt-3 space-y-2">
+        {DEMO.map((d) => (
+          <button
+            key={d.email}
+            type="button"
+            onClick={() => copy(d.email, d.password)}
+            className="flex w-full items-center justify-between rounded-md border border-transparent px-2 py-1.5 text-left text-xs transition-colors hover:border-gold/30 hover:bg-background"
+          >
+            <span className="font-medium text-navy-deep">{d.label}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{d.email}</span>
+          </button>
+        ))}
       </div>
-      <div className="relative">
-        <Input
-          id="password"
-          type={show ? "text" : "password"}
-          autoComplete="current-password"
-          placeholder="Your password"
-          className="h-11 pr-10"
-          {...register}
-        />
-        <button
-          type="button"
-          aria-label={show ? "Hide password" : "Show password"}
-          onClick={onToggle}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-navy-deep"
-        >
-          {show ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
-      </div>
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      <p className="mt-2 text-[10px] text-muted-foreground">
+        Tap a row to copy <span className="font-mono">email / password</span>.
+      </p>
     </div>
-  );
-}
-
-function SubmitFooter({ loading }: { loading: boolean }) {
-  return (
-    <Button
-      type="submit"
-      disabled={loading}
-      className="h-11 w-full bg-navy-deep text-ivory hover:bg-navy"
-    >
-      {loading ? (
-        <>
-          <Loader2 className="animate-spin" />
-          Signing in…
-        </>
-      ) : (
-        "Sign In"
-      )}
-    </Button>
   );
 }
