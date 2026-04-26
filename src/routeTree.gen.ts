@@ -11,7 +11,27 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated.portal'
+import { Route as AuthenticatedFieldRouteImport } from './routes/_authenticated.field'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedPortalIndexRouteImport } from './routes/_authenticated.portal.index'
+import { Route as AuthenticatedFieldIndexRouteImport } from './routes/_authenticated.field.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
+import { Route as AuthenticatedPortalVisitsRouteImport } from './routes/_authenticated.portal.visits'
+import { Route as AuthenticatedPortalSettingsRouteImport } from './routes/_authenticated.portal.settings'
+import { Route as AuthenticatedPortalReadinessRouteImport } from './routes/_authenticated.portal.readiness'
+import { Route as AuthenticatedPortalQueriesRouteImport } from './routes/_authenticated.portal.queries'
+import { Route as AuthenticatedPortalProgressRouteImport } from './routes/_authenticated.portal.progress'
+import { Route as AuthenticatedPortalMilestonesRouteImport } from './routes/_authenticated.portal.milestones'
+import { Route as AuthenticatedPortalDocumentsRouteImport } from './routes/_authenticated.portal.documents'
+import { Route as AuthenticatedFieldUploadRouteImport } from './routes/_authenticated.field.upload'
+import { Route as AuthenticatedFieldQueriesRouteImport } from './routes/_authenticated.field.queries'
+import { Route as AuthenticatedFieldMilestonesRouteImport } from './routes/_authenticated.field.milestones'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
+import { Route as AuthenticatedAdminProjectsRouteImport } from './routes/_authenticated.admin.projects'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated.admin.audit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -23,38 +43,270 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFieldRoute = AuthenticatedFieldRouteImport.update({
+  id: '/field',
+  path: '/field',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPortalIndexRoute =
+  AuthenticatedPortalIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedFieldIndexRoute = AuthenticatedFieldIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedFieldRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedPortalVisitsRoute =
+  AuthenticatedPortalVisitsRouteImport.update({
+    id: '/visits',
+    path: '/visits',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalSettingsRoute =
+  AuthenticatedPortalSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalReadinessRoute =
+  AuthenticatedPortalReadinessRouteImport.update({
+    id: '/readiness',
+    path: '/readiness',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalQueriesRoute =
+  AuthenticatedPortalQueriesRouteImport.update({
+    id: '/queries',
+    path: '/queries',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalProgressRoute =
+  AuthenticatedPortalProgressRouteImport.update({
+    id: '/progress',
+    path: '/progress',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalMilestonesRoute =
+  AuthenticatedPortalMilestonesRouteImport.update({
+    id: '/milestones',
+    path: '/milestones',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedPortalDocumentsRoute =
+  AuthenticatedPortalDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthenticatedPortalRoute,
+  } as any)
+const AuthenticatedFieldUploadRoute =
+  AuthenticatedFieldUploadRouteImport.update({
+    id: '/upload',
+    path: '/upload',
+    getParentRoute: () => AuthenticatedFieldRoute,
+  } as any)
+const AuthenticatedFieldQueriesRoute =
+  AuthenticatedFieldQueriesRouteImport.update({
+    id: '/queries',
+    path: '/queries',
+    getParentRoute: () => AuthenticatedFieldRoute,
+  } as any)
+const AuthenticatedFieldMilestonesRoute =
+  AuthenticatedFieldMilestonesRouteImport.update({
+    id: '/milestones',
+    path: '/milestones',
+    getParentRoute: () => AuthenticatedFieldRoute,
+  } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminProjectsRoute =
+  AuthenticatedAdminProjectsRouteImport.update({
+    id: '/projects',
+    path: '/projects',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/field': typeof AuthenticatedFieldRouteWithChildren
+  '/portal': typeof AuthenticatedPortalRouteWithChildren
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/projects': typeof AuthenticatedAdminProjectsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/field/queries': typeof AuthenticatedFieldQueriesRoute
+  '/field/upload': typeof AuthenticatedFieldUploadRoute
+  '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
+  '/portal/progress': typeof AuthenticatedPortalProgressRoute
+  '/portal/queries': typeof AuthenticatedPortalQueriesRoute
+  '/portal/readiness': typeof AuthenticatedPortalReadinessRoute
+  '/portal/settings': typeof AuthenticatedPortalSettingsRoute
+  '/portal/visits': typeof AuthenticatedPortalVisitsRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/field/': typeof AuthenticatedFieldIndexRoute
+  '/portal/': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/projects': typeof AuthenticatedAdminProjectsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/field/queries': typeof AuthenticatedFieldQueriesRoute
+  '/field/upload': typeof AuthenticatedFieldUploadRoute
+  '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
+  '/portal/progress': typeof AuthenticatedPortalProgressRoute
+  '/portal/queries': typeof AuthenticatedPortalQueriesRoute
+  '/portal/readiness': typeof AuthenticatedPortalReadinessRoute
+  '/portal/settings': typeof AuthenticatedPortalSettingsRoute
+  '/portal/visits': typeof AuthenticatedPortalVisitsRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
+  '/field': typeof AuthenticatedFieldIndexRoute
+  '/portal': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/field': typeof AuthenticatedFieldRouteWithChildren
+  '/_authenticated/portal': typeof AuthenticatedPortalRouteWithChildren
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/projects': typeof AuthenticatedAdminProjectsRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/_authenticated/field/queries': typeof AuthenticatedFieldQueriesRoute
+  '/_authenticated/field/upload': typeof AuthenticatedFieldUploadRoute
+  '/_authenticated/portal/documents': typeof AuthenticatedPortalDocumentsRoute
+  '/_authenticated/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
+  '/_authenticated/portal/progress': typeof AuthenticatedPortalProgressRoute
+  '/_authenticated/portal/queries': typeof AuthenticatedPortalQueriesRoute
+  '/_authenticated/portal/readiness': typeof AuthenticatedPortalReadinessRoute
+  '/_authenticated/portal/settings': typeof AuthenticatedPortalSettingsRoute
+  '/_authenticated/portal/visits': typeof AuthenticatedPortalVisitsRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/field/': typeof AuthenticatedFieldIndexRoute
+  '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forgot-password' | '/login'
+  fullPaths:
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/admin'
+    | '/field'
+    | '/portal'
+    | '/admin/audit'
+    | '/admin/projects'
+    | '/admin/users'
+    | '/field/milestones'
+    | '/field/queries'
+    | '/field/upload'
+    | '/portal/documents'
+    | '/portal/milestones'
+    | '/portal/progress'
+    | '/portal/queries'
+    | '/portal/readiness'
+    | '/portal/settings'
+    | '/portal/visits'
+    | '/admin/'
+    | '/field/'
+    | '/portal/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login'
-  id: '__root__' | '/' | '/forgot-password' | '/login'
+  to:
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/admin/audit'
+    | '/admin/projects'
+    | '/admin/users'
+    | '/field/milestones'
+    | '/field/queries'
+    | '/field/upload'
+    | '/portal/documents'
+    | '/portal/milestones'
+    | '/portal/progress'
+    | '/portal/queries'
+    | '/portal/readiness'
+    | '/portal/settings'
+    | '/portal/visits'
+    | '/admin'
+    | '/field'
+    | '/portal'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/forgot-password'
+    | '/login'
+    | '/_authenticated/admin'
+    | '/_authenticated/field'
+    | '/_authenticated/portal'
+    | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/projects'
+    | '/_authenticated/admin/users'
+    | '/_authenticated/field/milestones'
+    | '/_authenticated/field/queries'
+    | '/_authenticated/field/upload'
+    | '/_authenticated/portal/documents'
+    | '/_authenticated/portal/milestones'
+    | '/_authenticated/portal/progress'
+    | '/_authenticated/portal/queries'
+    | '/_authenticated/portal/readiness'
+    | '/_authenticated/portal/settings'
+    | '/_authenticated/portal/visits'
+    | '/_authenticated/admin/'
+    | '/_authenticated/field/'
+    | '/_authenticated/portal/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
 }
@@ -75,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,14 +341,232 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/portal': {
+      id: '/_authenticated/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof AuthenticatedPortalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/field': {
+      id: '/_authenticated/field'
+      path: '/field'
+      fullPath: '/field'
+      preLoaderRoute: typeof AuthenticatedFieldRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/portal/': {
+      id: '/_authenticated/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof AuthenticatedPortalIndexRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/field/': {
+      id: '/_authenticated/field/'
+      path: '/'
+      fullPath: '/field/'
+      preLoaderRoute: typeof AuthenticatedFieldIndexRouteImport
+      parentRoute: typeof AuthenticatedFieldRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/portal/visits': {
+      id: '/_authenticated/portal/visits'
+      path: '/visits'
+      fullPath: '/portal/visits'
+      preLoaderRoute: typeof AuthenticatedPortalVisitsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/settings': {
+      id: '/_authenticated/portal/settings'
+      path: '/settings'
+      fullPath: '/portal/settings'
+      preLoaderRoute: typeof AuthenticatedPortalSettingsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/readiness': {
+      id: '/_authenticated/portal/readiness'
+      path: '/readiness'
+      fullPath: '/portal/readiness'
+      preLoaderRoute: typeof AuthenticatedPortalReadinessRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/queries': {
+      id: '/_authenticated/portal/queries'
+      path: '/queries'
+      fullPath: '/portal/queries'
+      preLoaderRoute: typeof AuthenticatedPortalQueriesRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/progress': {
+      id: '/_authenticated/portal/progress'
+      path: '/progress'
+      fullPath: '/portal/progress'
+      preLoaderRoute: typeof AuthenticatedPortalProgressRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/milestones': {
+      id: '/_authenticated/portal/milestones'
+      path: '/milestones'
+      fullPath: '/portal/milestones'
+      preLoaderRoute: typeof AuthenticatedPortalMilestonesRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/portal/documents': {
+      id: '/_authenticated/portal/documents'
+      path: '/documents'
+      fullPath: '/portal/documents'
+      preLoaderRoute: typeof AuthenticatedPortalDocumentsRouteImport
+      parentRoute: typeof AuthenticatedPortalRoute
+    }
+    '/_authenticated/field/upload': {
+      id: '/_authenticated/field/upload'
+      path: '/upload'
+      fullPath: '/field/upload'
+      preLoaderRoute: typeof AuthenticatedFieldUploadRouteImport
+      parentRoute: typeof AuthenticatedFieldRoute
+    }
+    '/_authenticated/field/queries': {
+      id: '/_authenticated/field/queries'
+      path: '/queries'
+      fullPath: '/field/queries'
+      preLoaderRoute: typeof AuthenticatedFieldQueriesRouteImport
+      parentRoute: typeof AuthenticatedFieldRoute
+    }
+    '/_authenticated/field/milestones': {
+      id: '/_authenticated/field/milestones'
+      path: '/milestones'
+      fullPath: '/field/milestones'
+      preLoaderRoute: typeof AuthenticatedFieldMilestonesRouteImport
+      parentRoute: typeof AuthenticatedFieldRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/projects': {
+      id: '/_authenticated/admin/projects'
+      path: '/projects'
+      fullPath: '/admin/projects'
+      preLoaderRoute: typeof AuthenticatedAdminProjectsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminProjectsRoute: typeof AuthenticatedAdminProjectsRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminProjectsRoute: AuthenticatedAdminProjectsRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
+interface AuthenticatedFieldRouteChildren {
+  AuthenticatedFieldMilestonesRoute: typeof AuthenticatedFieldMilestonesRoute
+  AuthenticatedFieldQueriesRoute: typeof AuthenticatedFieldQueriesRoute
+  AuthenticatedFieldUploadRoute: typeof AuthenticatedFieldUploadRoute
+  AuthenticatedFieldIndexRoute: typeof AuthenticatedFieldIndexRoute
+}
+
+const AuthenticatedFieldRouteChildren: AuthenticatedFieldRouteChildren = {
+  AuthenticatedFieldMilestonesRoute: AuthenticatedFieldMilestonesRoute,
+  AuthenticatedFieldQueriesRoute: AuthenticatedFieldQueriesRoute,
+  AuthenticatedFieldUploadRoute: AuthenticatedFieldUploadRoute,
+  AuthenticatedFieldIndexRoute: AuthenticatedFieldIndexRoute,
+}
+
+const AuthenticatedFieldRouteWithChildren =
+  AuthenticatedFieldRoute._addFileChildren(AuthenticatedFieldRouteChildren)
+
+interface AuthenticatedPortalRouteChildren {
+  AuthenticatedPortalDocumentsRoute: typeof AuthenticatedPortalDocumentsRoute
+  AuthenticatedPortalMilestonesRoute: typeof AuthenticatedPortalMilestonesRoute
+  AuthenticatedPortalProgressRoute: typeof AuthenticatedPortalProgressRoute
+  AuthenticatedPortalQueriesRoute: typeof AuthenticatedPortalQueriesRoute
+  AuthenticatedPortalReadinessRoute: typeof AuthenticatedPortalReadinessRoute
+  AuthenticatedPortalSettingsRoute: typeof AuthenticatedPortalSettingsRoute
+  AuthenticatedPortalVisitsRoute: typeof AuthenticatedPortalVisitsRoute
+  AuthenticatedPortalIndexRoute: typeof AuthenticatedPortalIndexRoute
+}
+
+const AuthenticatedPortalRouteChildren: AuthenticatedPortalRouteChildren = {
+  AuthenticatedPortalDocumentsRoute: AuthenticatedPortalDocumentsRoute,
+  AuthenticatedPortalMilestonesRoute: AuthenticatedPortalMilestonesRoute,
+  AuthenticatedPortalProgressRoute: AuthenticatedPortalProgressRoute,
+  AuthenticatedPortalQueriesRoute: AuthenticatedPortalQueriesRoute,
+  AuthenticatedPortalReadinessRoute: AuthenticatedPortalReadinessRoute,
+  AuthenticatedPortalSettingsRoute: AuthenticatedPortalSettingsRoute,
+  AuthenticatedPortalVisitsRoute: AuthenticatedPortalVisitsRoute,
+  AuthenticatedPortalIndexRoute: AuthenticatedPortalIndexRoute,
+}
+
+const AuthenticatedPortalRouteWithChildren =
+  AuthenticatedPortalRoute._addFileChildren(AuthenticatedPortalRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedFieldRoute: typeof AuthenticatedFieldRouteWithChildren
+  AuthenticatedPortalRoute: typeof AuthenticatedPortalRouteWithChildren
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedFieldRoute: AuthenticatedFieldRouteWithChildren,
+  AuthenticatedPortalRoute: AuthenticatedPortalRouteWithChildren,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
