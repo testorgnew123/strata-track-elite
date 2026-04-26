@@ -91,6 +91,42 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          provider_id: string | null
+          recipient_email: string
+          recipient_id: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          provider_id?: string | null
+          recipient_email: string
+          recipient_id?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          provider_id?: string | null
+          recipient_email?: string
+          recipient_id?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       milestones: {
         Row: {
           acknowledged_at: string | null
@@ -143,6 +179,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_templates: {
+        Row: {
+          body_template: string
+          enabled: boolean
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_template: string
+          enabled?: boolean
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          enabled?: boolean
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -602,6 +665,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _admin_ids: { Args: never; Returns: string[] }
+      _project_client_ids: { Args: { _project_id: string }; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
