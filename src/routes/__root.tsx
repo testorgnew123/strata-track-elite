@@ -1,18 +1,16 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center animate-rise-in">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
-          Error 404
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Error 404</p>
         <h1 className="mt-4 font-display text-7xl font-light text-navy-deep">404</h1>
-        <h2 className="mt-3 font-display text-2xl font-light text-navy-deep">
-          Page not found
-        </h2>
+        <h2 className="mt-3 font-display text-2xl font-light text-navy-deep">Page not found</h2>
         <p className="mt-3 text-sm text-muted-foreground">
           The page you're looking for doesn't exist in your portal.
         </p>
@@ -61,5 +59,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
-  return <Outlet />;
+  return (
+    <AuthProvider>
+      <I18nProvider>
+        <Outlet />
+      </I18nProvider>
+    </AuthProvider>
+  );
 }

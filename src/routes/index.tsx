@@ -1,13 +1,20 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useAuth, homeForRole } from "@/lib/auth-context";
+import { Loader2 } from "lucide-react";
 
-/**
- * Root URL is not a landing page — this is a portal.
- * Once auth is wired (Phase 2), this redirects role-aware:
- *   client → /portal, engineer → /field, admin → /admin
- * For now we route everyone to /login.
- */
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    throw redirect({ to: "/login" });
-  },
+  component: IndexRedirect,
 });
+
+function IndexRedirect() {
+  const { loading, session, primaryRole } = useAuth();
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/login" />;
+  return <Navigate to={homeForRole(primaryRole)} />;
+}

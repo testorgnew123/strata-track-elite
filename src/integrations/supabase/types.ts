@@ -44,6 +44,150 @@ export type Database = {
         }
         Relationships: []
       }
+      documents: {
+        Row: {
+          category: Database["public"]["Enums"]["document_category"]
+          created_at: string
+          file_path: string
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          project_id: string
+          title: string
+          uploader_id: string | null
+          version: number
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          file_path: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          project_id: string
+          title: string
+          uploader_id?: string | null
+          version?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["document_category"]
+          created_at?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          project_id?: string
+          title?: string
+          uploader_id?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestones: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          project_id: string
+          sort_order: number
+          status: Database["public"]["Enums"]["milestone_status"]
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["milestone_status"]
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["milestone_status"]
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          link_to: string | null
+          project_id: string | null
+          read_at: string | null
+          recipient_id: string
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          link_to?: string | null
+          project_id?: string | null
+          read_at?: string | null
+          recipient_id: string
+          title: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          link_to?: string | null
+          project_id?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -74,6 +218,47 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_updates: {
+        Row: {
+          author_id: string | null
+          caption: string | null
+          category: Database["public"]["Enums"]["progress_category"]
+          created_at: string
+          id: string
+          photo_url: string | null
+          project_id: string
+          taken_at: string
+        }
+        Insert: {
+          author_id?: string | null
+          caption?: string | null
+          category?: Database["public"]["Enums"]["progress_category"]
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          project_id: string
+          taken_at?: string
+        }
+        Update: {
+          author_id?: string | null
+          caption?: string | null
+          category?: Database["public"]["Enums"]["progress_category"]
+          created_at?: string
+          id?: string
+          photo_url?: string | null
+          project_id?: string
+          taken_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_updates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string
@@ -101,6 +286,41 @@ export type Database = {
             foreignKeyName: "project_members_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_ratings: {
+        Row: {
+          client_id: string
+          created_at: string
+          feedback: string | null
+          id: string
+          project_id: string
+          stars: number
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          project_id: string
+          stars: number
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          project_id?: string
+          stars?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_ratings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -154,6 +374,208 @@ export type Database = {
         }
         Relationships: []
       }
+      queries: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          priority: Database["public"]["Enums"]["query_priority"]
+          project_id: string
+          status: Database["public"]["Enums"]["query_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["query_priority"]
+          project_id: string
+          status?: Database["public"]["Enums"]["query_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["query_priority"]
+          project_id?: string
+          status?: Database["public"]["Enums"]["query_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      query_replies: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          query_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          query_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          query_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "query_replies_query_id_fkey"
+            columns: ["query_id"]
+            isOneToOne: false
+            referencedRelation: "queries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      readiness_items: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          project_id: string
+          sort_order: number
+          status: Database["public"]["Enums"]["readiness_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          project_id: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["readiness_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          sort_order?: number
+          status?: Database["public"]["Enums"]["readiness_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "readiness_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          project_id: string
+          referee_contact: string
+          referee_name: string
+          referrer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          project_id: string
+          referee_contact: string
+          referee_name: string
+          referrer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          project_id?: string
+          referee_contact?: string
+          referee_name?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_visits: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          project_id: string
+          requested_by: string
+          requested_date: string
+          requested_slot: string | null
+          status: Database["public"]["Enums"]["visit_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          requested_by: string
+          requested_date: string
+          requested_slot?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          requested_by?: string
+          requested_date?: string
+          requested_slot?: string | null
+          status?: Database["public"]["Enums"]["visit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_visits_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -196,12 +618,38 @@ export type Database = {
     Enums: {
       app_language: "en" | "hi"
       app_role: "client" | "engineer" | "admin"
+      document_category:
+        | "contract"
+        | "floor_plan"
+        | "permit"
+        | "report"
+        | "invoice_doc"
+        | "other"
+      milestone_status: "pending" | "in_progress" | "completed"
+      notification_kind:
+        | "milestone_pending_ack"
+        | "visit_reminder"
+        | "query_reply"
+        | "document_added"
+        | "progress_added"
+        | "handover_ready"
+      progress_category:
+        | "structure"
+        | "plumbing"
+        | "electrical"
+        | "finishing"
+        | "exterior"
+        | "other"
       project_status:
         | "planning"
         | "in_progress"
         | "on_hold"
         | "handover"
         | "completed"
+      query_priority: "low" | "normal" | "high"
+      query_status: "open" | "answered" | "closed"
+      readiness_status: "pending" | "done" | "na"
+      visit_status: "requested" | "confirmed" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -331,6 +779,31 @@ export const Constants = {
     Enums: {
       app_language: ["en", "hi"],
       app_role: ["client", "engineer", "admin"],
+      document_category: [
+        "contract",
+        "floor_plan",
+        "permit",
+        "report",
+        "invoice_doc",
+        "other",
+      ],
+      milestone_status: ["pending", "in_progress", "completed"],
+      notification_kind: [
+        "milestone_pending_ack",
+        "visit_reminder",
+        "query_reply",
+        "document_added",
+        "progress_added",
+        "handover_ready",
+      ],
+      progress_category: [
+        "structure",
+        "plumbing",
+        "electrical",
+        "finishing",
+        "exterior",
+        "other",
+      ],
       project_status: [
         "planning",
         "in_progress",
@@ -338,6 +811,10 @@ export const Constants = {
         "handover",
         "completed",
       ],
+      query_priority: ["low", "normal", "high"],
+      query_status: ["open", "answered", "closed"],
+      readiness_status: ["pending", "done", "na"],
+      visit_status: ["requested", "confirmed", "completed", "cancelled"],
     },
   },
 } as const
