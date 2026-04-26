@@ -160,7 +160,7 @@ function ProjectDetail() {
           />
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={project.status} onValueChange={(v) => updateField({ status: v })}>
+            <Select value={project.status} onValueChange={(v) => updateField({ status: v as "planning" | "in_progress" | "on_hold" | "handover" | "completed" })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
