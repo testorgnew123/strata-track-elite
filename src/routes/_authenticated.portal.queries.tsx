@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Send } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -30,6 +30,7 @@ function QueriesPage() {
   const [active, setActive] = useState<any>(null);
   const [replies, setReplies] = useState<any[]>([]);
   const [replyBody, setReplyBody] = useState("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = async () => {
     const p = await fetchUserPrimaryProject();
@@ -38,13 +39,12 @@ function QueriesPage() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from("queries")
-      .select("*")
-      .eq("project_id", p.id)
-      .order("created_at", { ascending: false });
-    setQueries(data ?? []);
-    setLoading(false);
+    try {
+      const data = await rpc("queries.list", { projectId: p.id });
+      setQueries(data);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
@@ -52,42 +52,66 @@ function QueriesPage() {
 
   const openThread = async (q: any) => {
     setActive(q);
-    const { data } = await supabase
-      .from("query_replies")
-      .select("*")
-      .eq("query_id", q.id)
-      .order("created_at");
-    setReplies(data ?? []);
+    const data = await rpc("replies.list", { queryId: q.id });
+    setReplies(data);
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const [threadData, listData] = await Promise.all([
+          rpc("replies.list", { queryId: q.id }),
+          rpc("queries.list", { projectId: q.projectId }),
+        ]);
+        setReplies(threadData);
+        setQueries(listData);
+        setActive((prev: any) => {
+          const updated = listData.find((x: any) => x.id === q.id);
+          return updated ?? prev;
+        });
+      } catch {
+        // ignore poll errors
+      }
+    }, 5000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const submit = async () => {
     if (!user || !project) return;
     setSubmitting(true);
-    const { error } = await supabase.from("queries").insert({
-      project_id: project.id,
-      author_id: user.id,
-      subject,
-      body,
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Query submitted");
-    setSubject("");
-    setBody("");
-    setOpen(false);
-    load();
+    try {
+      await rpc("queries.create", { projectId: project.id, subject, body });
+      toast.success("Query submitted");
+      setSubject("");
+      setBody("");
+      setOpen(false);
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const reply = async () => {
     if (!user || !active || !replyBody.trim()) return;
-    const { error } = await supabase.from("query_replies").insert({
-      query_id: active.id,
-      author_id: user.id,
-      body: replyBody,
-    });
-    if (error) return toast.error(error.message);
-    setReplyBody("");
-    openThread(active);
+    try {
+      await rpc("replies.create", { queryId: active.id, body: replyBody });
+      setReplyBody("");
+      const [threadData, listData] = await Promise.all([
+        rpc("replies.list", { queryId: active.id }),
+        rpc("queries.list", { projectId: project!.id }),
+      ]);
+      setReplies(threadData);
+      setQueries(listData);
+      const updated = listData.find((q: any) => q.id === active.id);
+      if (updated) setActive(updated);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   return (
@@ -149,7 +173,7 @@ function QueriesPage() {
                 </div>
                 <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{q.body}</p>
                 <p className="mt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {new Date(q.created_at).toLocaleDateString()}
+                  {new Date(q.createdAt).toLocaleDateString()}
                 </p>
               </button>
             ))}
@@ -163,9 +187,9 @@ function QueriesPage() {
                   {replies.map((r) => (
                     <Bubble
                       key={r.id}
-                      author={r.author_id === user?.id ? "You" : "Team"}
+                      author={r.authorId === user?.id ? "You" : "Team"}
                       body={r.body}
-                      mine={r.author_id === user?.id}
+                      mine={r.authorId === user?.id}
                     />
                   ))}
                 </div>

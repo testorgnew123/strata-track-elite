@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedLayout() {
-  const { loading, session } = useAuth();
+  const { loading, user } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -15,7 +15,7 @@ function AuthenticatedLayout() {
       </div>
     );
   }
-  if (!session) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
   return <Outlet />;
 }
 

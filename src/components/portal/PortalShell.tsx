@@ -38,7 +38,7 @@ export function PortalShell({ navItems, layout = "sidebar", children }: Props) {
     navigate({ to: "/login" });
   };
 
-  const initials = (profile?.full_name ?? user?.email ?? "?")
+  const initials = (profile?.fullName ?? user?.email ?? "?")
     .split(" ")
     .map((s) => s[0])
     .join("")
@@ -78,7 +78,7 @@ export function PortalShell({ navItems, layout = "sidebar", children }: Props) {
                   <span className="grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-[10px] font-semibold text-ivory">
                     {initials}
                   </span>
-                  <span className="hidden md:inline">{profile?.full_name ?? user?.email}</span>
+                  <span className="hidden md:inline">{profile?.fullName ?? user?.email}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">

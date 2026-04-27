@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Circle, Star, Send, UserPlus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -35,11 +35,11 @@ function ReadinessPage() {
       const p = await fetchUserPrimaryProject();
       setProject(p);
       if (!p) return setLoading(false);
-      const [{ data: ri }, { data: r }] = await Promise.all([
-        supabase.from("readiness_items").select("*").eq("project_id", p.id).order("sort_order"),
-        supabase.from("project_ratings").select("*").eq("project_id", p.id).maybeSingle(),
+      const [ri, r] = await Promise.all([
+        rpc("readiness.list", { projectId: p.id }),
+        rpc("ratings.get", { projectId: p.id }),
       ]);
-      setItems(ri ?? []);
+      setItems(ri);
       setRating(r);
       if (r) setStars(r.stars);
       setLoading(false);
@@ -54,31 +54,36 @@ function ReadinessPage() {
   const submitRating = async () => {
     if (!user || !project || stars < 1) return toast.error("Pick a star rating");
     setBusy(true);
-    const { error } = await supabase
-      .from("project_ratings")
-      .insert({ project_id: project.id, client_id: user.id, stars, feedback });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Thank you for your feedback");
-    setRating({ stars, feedback });
+    try {
+      await rpc("ratings.create", { projectId: project.id, stars, feedback });
+      toast.success("Thank you for your feedback");
+      setRating({ stars, feedback });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const submitReferral = async () => {
     if (!user || !project || !refName || !refContact) return toast.error("Name and contact required");
     setBusy(true);
-    const { error } = await supabase.from("referrals").insert({
-      project_id: project.id,
-      referrer_id: user.id,
-      referee_name: refName,
-      referee_contact: refContact,
-      note: refNote,
-    });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Referral sent — thank you!");
-    setRefName("");
-    setRefContact("");
-    setRefNote("");
+    try {
+      await rpc("referrals.create", {
+        projectId: project.id,
+        refereeName: refName,
+        refereeContact: refContact,
+        note: refNote || undefined,
+      });
+      toast.success("Referral sent — thank you!");
+      setRefName("");
+      setRefContact("");
+      setRefNote("");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Download, FileText, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getAccessToken } from "@/lib/api-client";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { generateProjectReport } from "@/lib/server/pdf-report";
 import { Card } from "@/components/ui/card";
@@ -30,8 +30,7 @@ function ReportsPage() {
     if (!project) return;
     setBusy(true);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess.session?.access_token;
+      const token = getAccessToken();
       if (!token) throw new Error("Not signed in");
       const res = await generateProjectReport({
         data: { projectId: project.id, accessToken: token },

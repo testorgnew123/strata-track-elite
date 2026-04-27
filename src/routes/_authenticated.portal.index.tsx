@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Camera, ListChecks, MessageSquare, CalendarClock, Star } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject, projectStatusLabel } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuthedImage } from "@/components/ui/authed-image";
 
 export const Route = createFileRoute("/_authenticated/portal/")({
   component: PortalOverview,
@@ -34,34 +35,17 @@ function PortalOverview() {
         setLoading(false);
         return;
       }
-      const [{ data: ms }, { data: qs }, { data: photo }, { data: rating }] = await Promise.all([
-        supabase
-          .from("milestones")
-          .select("*")
-          .eq("project_id", p.id)
-          .order("sort_order"),
-        supabase
-          .from("queries")
-          .select("id, status")
-          .eq("project_id", p.id)
-          .neq("status", "closed"),
-        supabase
-          .from("progress_updates")
-          .select("*")
-          .eq("project_id", p.id)
-          .order("taken_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("project_ratings")
-          .select("id")
-          .eq("project_id", p.id)
-          .maybeSingle(),
+      const [ms, qs, progressRows, rating] = await Promise.all([
+        rpc("milestones.list", { projectId: p.id }),
+        rpc("queries.listOpen", { projectId: p.id }),
+        rpc("progress.list", { projectId: p.id, limit: 1 }),
+        rpc("ratings.get", { projectId: p.id }),
       ]);
+      const photo = progressRows[0] ?? null;
       setStats({
-        pendingAcks: (ms ?? []).filter((m: any) => m.status === "completed" && !m.acknowledged_at).length,
-        openQueries: (qs ?? []).length,
-        nextMilestone: (ms ?? []).find((m: any) => m.status !== "completed") ?? null,
+        pendingAcks: ms.filter((m) => m.status === "completed" && !m.acknowledgedAt).length,
+        openQueries: qs.filter((q: any) => q.status === "open").length,
+        nextMilestone: ms.find((m) => m.status !== "completed") ?? null,
         recentPhoto: photo,
         rated: !!rating,
       });
@@ -69,7 +53,7 @@ function PortalOverview() {
     })();
   }, [user?.id]);
 
-  const greeting = profile?.full_name ? profile.full_name.split(" ")[0] : "there";
+  const greeting = profile?.fullName ? profile.fullName.split(" ")[0] : "there";
 
   return (
     <div className="space-y-8 animate-rise-in">
@@ -113,15 +97,15 @@ function PortalOverview() {
                     <span className="font-medium uppercase tracking-wider text-navy-deep">
                       {projectStatusLabel[project.status] ?? project.status}
                     </span>
-                    <span className="text-muted-foreground">{project.progress_percent}%</span>
+                    <span className="text-muted-foreground">{project.progressPercent}%</span>
                   </div>
-                  <Progress value={project.progress_percent} className="mt-2 h-1.5" />
+                  <Progress value={project.progressPercent} className="mt-2 h-1.5" />
                 </div>
-                {project.expected_handover_date && (
+                {project.expectedHandoverDate && (
                   <p className="mt-4 text-xs text-muted-foreground">
                     {t("portal.handoverIn")}:{" "}
                     <span className="font-medium text-navy-deep">
-                      {new Date(project.expected_handover_date).toLocaleDateString(undefined, {
+                      {new Date(project.expectedHandoverDate).toLocaleDateString(undefined, {
                         day: "numeric",
                         month: "long",
                         year: "numeric",
@@ -161,9 +145,9 @@ function PortalOverview() {
             {stats?.recentPhoto && (
               <Card className="overflow-hidden">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-                  {stats.recentPhoto.photo_url && (
-                    <img
-                      src={stats.recentPhoto.photo_url}
+                  {stats.recentPhoto.photoUrl && (
+                    <AuthedImage
+                      src={stats.recentPhoto.photoUrl}
                       alt={stats.recentPhoto.caption ?? "Latest progress"}
                       className="h-full w-full object-cover"
                       loading="lazy"

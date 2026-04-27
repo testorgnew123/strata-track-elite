@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -34,13 +34,12 @@ function VisitsPage() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from("site_visits")
-      .select("*")
-      .eq("project_id", p.id)
-      .order("requested_date", { ascending: false });
-    setVisits(data ?? []);
-    setLoading(false);
+    try {
+      const data = await rpc("visits.list", { projectId: p.id });
+      setVisits(data);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
@@ -49,19 +48,22 @@ function VisitsPage() {
   const request = async () => {
     if (!user || !project) return;
     setSubmitting(true);
-    const { error } = await supabase.from("site_visits").insert({
-      project_id: project.id,
-      requested_by: user.id,
-      requested_date: date,
-      requested_slot: slot,
-      notes,
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Site visit requested");
-    setDate("");
-    setNotes("");
-    load();
+    try {
+      await rpc("visits.create", {
+        projectId: project.id,
+        requestedDate: date,
+        requestedSlot: slot,
+        notes: notes || undefined,
+      });
+      toast.success("Site visit requested");
+      setDate("");
+      setNotes("");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -107,12 +109,12 @@ function VisitsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-navy-deep">
-                    {new Date(v.requested_date).toLocaleDateString(undefined, {
+                    {new Date(v.requestedDate).toLocaleDateString(undefined, {
                       weekday: "short",
                       day: "numeric",
                       month: "long",
                     })}
-                    {v.requested_slot && <span className="text-muted-foreground"> · {v.requested_slot}</span>}
+                    {v.requestedSlot && <span className="text-muted-foreground"> · {v.requestedSlot}</span>}
                   </p>
                   {v.notes && <p className="mt-1 text-xs text-muted-foreground">{v.notes}</p>}
                 </div>

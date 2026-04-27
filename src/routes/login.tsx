@@ -10,7 +10,7 @@ import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth, homeForRole, type AppRole } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -110,33 +110,22 @@ function FormPanel() {
 function LoginForm() {
   const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (values: Values) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
-    if (error) {
-      toast.error(error.message || "Sign in failed");
+    let result: { primaryRole: AppRole | null };
+    try {
+      result = await signIn(values.email, values.password);
+    } catch (e) {
+      toast.error((e as Error).message || "Sign in failed");
       return;
     }
-    if (!data.user) {
-      toast.error("Sign in failed");
-      return;
-    }
-    // Determine role and redirect
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id);
-    const roleSet = new Set((roles ?? []).map((r) => r.role));
-    const dest = roleSet.has("admin") ? "/admin" : roleSet.has("engineer") ? "/field" : "/portal";
     toast.success("Welcome back");
-    navigate({ to: dest });
+    navigate({ to: homeForRole(result.primaryRole) });
   };
 
   return (

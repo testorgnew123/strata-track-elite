@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -41,13 +41,16 @@ function NotificationsAdmin() {
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
-    const [{ data: t }, { data: e }] = await Promise.all([
-      supabase.from("notification_templates").select("*").order("kind"),
-      supabase.from("email_log").select("*").order("created_at", { ascending: false }).limit(50),
-    ]);
-    setTemplates(t ?? []);
-    setEmails(e ?? []);
-    setLoading(false);
+    try {
+      const [t, e] = await Promise.all([
+        rpc("admin.notif.templates"),
+        rpc("admin.notif.emailLog"),
+      ]);
+      setTemplates(t);
+      setEmails(e);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
@@ -57,20 +60,25 @@ function NotificationsAdmin() {
 
   useEffect(() => {
     setSubject(current?.subject ?? "");
-    setBodyText(current?.body_template ?? "");
+    setBodyText(current?.bodyTemplate ?? "");
   }, [current]);
 
   const save = async () => {
     if (!current) return;
     setSaving(true);
-    const { error } = await supabase
-      .from("notification_templates")
-      .update({ subject, body_template: bodyText })
-      .eq("id", current.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Template saved");
-    load();
+    try {
+      await rpc("admin.notif.updateTemplate", {
+        kind: current.kind,
+        subject,
+        bodyTemplate: bodyText,
+      });
+      toast.success("Template saved");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -149,7 +157,7 @@ function NotificationsAdmin() {
                   <Card key={e.id} className="flex items-center justify-between gap-3 p-3 text-xs">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-navy-deep">{e.subject}</p>
-                      <p className="truncate text-muted-foreground">{e.recipient_email}</p>
+                      <p className="truncate text-muted-foreground">{e.recipientEmail}</p>
                     </div>
                     <Badge
                       variant={e.status === "sent" ? "default" : e.status === "failed" ? "destructive" : "secondary"}

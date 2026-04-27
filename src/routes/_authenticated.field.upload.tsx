@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { rpc } from "@/lib/rpc";
 import { useAuth } from "@/lib/auth-context";
 import { watermarkImage } from "@/lib/watermark";
+import { getAccessToken, refreshAccessToken } from "@/lib/api-client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +20,33 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/field/upload")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    projectId: typeof s.projectId === "string" ? s.projectId : undefined,
+  }),
   component: UploadPage,
 });
 
 function UploadPage() {
   const { user } = useAuth();
+  const { projectId: searchProjectId } = Route.useSearch();
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectId, setProjectId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [category, setCategory] = useState<string>("structure");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    rpc("projects.listMine").then((list) => {
+      setProjects(list);
+      const first = searchProjectId && list.some((p: any) => p.id === searchProjectId)
+        ? searchProjectId
+        : list[0]?.id ?? "";
+      setProjectId(first);
+    });
+  }, []);
 
   const onPick = (f: File | null) => {
     setFile(f);
@@ -38,45 +55,49 @@ function UploadPage() {
   };
 
   const submit = async () => {
-    if (!file || !user) return;
+    if (!file || !user || !projectId) return;
     setSubmitting(true);
-    const project = await fetchUserPrimaryProject();
-    if (!project) {
-      setSubmitting(false);
-      return toast.error("No project assigned");
-    }
-    let toUpload: File = file;
     try {
-      toUpload = await watermarkImage(file, project.code ?? "PROJECT");
-    } catch {
-      // fall back to original file if watermarking fails
-    }
-    const path = `${project.id}/${Date.now()}.jpg`;
-    const { error: upErr } = await supabase.storage
-      .from("progress-photos")
-      .upload(path, toUpload, { contentType: toUpload.type });
-    if (upErr) {
+      const project = projects.find((p) => p.id === projectId);
+      if (!project) throw new Error("No project selected");
+
+      let toUpload: File = file;
+      try {
+        toUpload = await watermarkImage(file, project.code ?? "PROJECT");
+      } catch {
+        // fall back to original file
+      }
+
+      const form = new FormData();
+      form.append("projectId", projectId);
+      form.append("category", category);
+      if (caption) form.append("caption", caption);
+      form.append("file", toUpload);
+
+      let token = getAccessToken();
+      if (!token) token = await refreshAccessToken();
+      const res = await fetch("/api/upload-photo", {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Upload failed");
+      }
+      toast.success("Update posted");
+      setFile(null);
+      setPreview(null);
+      setCaption("");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
       setSubmitting(false);
-      return toast.error(upErr.message);
     }
-    const { data: signed } = await supabase.storage
-      .from("progress-photos")
-      .createSignedUrl(path, 60 * 60 * 24 * 365);
-    const photoUrl = signed?.signedUrl ?? path;
-    const { error } = await supabase.from("progress_updates").insert({
-      project_id: project.id,
-      author_id: user.id,
-      category: category as any,
-      caption,
-      photo_url: photoUrl,
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Update posted");
-    setFile(null);
-    setPreview(null);
-    setCaption("");
   };
+
+  const selectedProject = projects.find((p) => p.id === projectId);
 
   return (
     <div className="space-y-6 animate-rise-in">
@@ -84,6 +105,30 @@ function UploadPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Upload</p>
         <h1 className="mt-2 font-display text-2xl font-light text-navy-deep">Post a progress update</h1>
       </header>
+
+      {projects.length > 1 && (
+        <div className="space-y-1.5">
+          <Label>Project</Label>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.code} — {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {selectedProject && (
+        <p className="text-xs text-muted-foreground">
+          Uploading to: <span className="font-medium text-navy-deep">{selectedProject.name}</span>
+        </p>
+      )}
 
       <Card className="p-5">
         <label className="flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-border bg-secondary/40">
@@ -128,20 +173,13 @@ function UploadPage() {
 
           <Button
             onClick={submit}
-            disabled={!file || submitting}
+            disabled={!file || !projectId || submitting}
             className="w-full bg-navy-deep text-ivory hover:bg-navy"
           >
             {submitting ? <Loader2 className="animate-spin" /> : "Post update"}
           </Button>
         </div>
       </Card>
-
-      <Input
-        type="hidden"
-        value=""
-        readOnly
-        aria-hidden
-      />
     </div>
   );
 }

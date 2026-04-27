@@ -22,11 +22,7 @@ export const Route = createFileRoute("/forgot-password")({
 });
 
 const schema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(3, "Enter your User ID or registered mobile number")
-    .max(40),
+  identifier: z.string().trim().email("Enter your registered email").max(120),
 });
 
 type Values = z.infer<typeof schema>;
@@ -38,10 +34,19 @@ function ForgotPasswordPage() {
     defaultValues: { identifier: "" },
   });
 
-  const onSubmit = async (_values: Values) => {
-    await new Promise((r) => setTimeout(r, 700));
-    setSent(true);
-    toast.success("If an account exists, an OTP has been sent to the registered email.");
+  const onSubmit = async (values: Values) => {
+    try {
+      await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.identifier }),
+      });
+      setSent(true);
+      toast.success("If an account exists, a reset link has been sent.");
+    } catch {
+      toast.error("Could not send reset email");
+    }
   };
 
   return (
@@ -100,10 +105,11 @@ function ForgotPasswordPage() {
 
                 <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="identifier">User ID or Mobile</Label>
+                    <Label htmlFor="identifier">Email</Label>
                     <Input
                       id="identifier"
-                      placeholder="CLIENT2201 or +91 98765 43210"
+                      type="email"
+                      placeholder="you@company.com"
                       className="h-11"
                       {...form.register("identifier")}
                     />

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexRedirect() {
-  const { loading, session, primaryRole } = useAuth();
+  const { loading, user, primaryRole } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -15,6 +15,6 @@ function IndexRedirect() {
       </div>
     );
   }
-  if (!session) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" />;
   return <Navigate to={homeForRole(primaryRole)} />;
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -14,13 +14,12 @@ function AdminAudit() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("audit_log")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      setRows(data ?? []);
-      setLoading(false);
+      try {
+        const data = await rpc("admin.audit.list", { limit: 200 });
+        setRows(data);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -44,11 +43,11 @@ function AdminAudit() {
               <div>
                 <p className="font-medium text-navy-deep">{r.action}</p>
                 <p className="text-muted-foreground">
-                  {r.entity_type} · {r.entity_id?.slice(0, 8)}
+                  {r.entityType} · {r.entityId?.slice(0, 8)}
                 </p>
               </div>
               <p className="text-muted-foreground">
-                {new Date(r.created_at).toLocaleString()}
+                {new Date(r.createdAt).toLocaleString()}
               </p>
             </Card>
           ))}

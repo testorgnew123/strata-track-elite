@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, Download } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,25 +23,22 @@ function DocsPage() {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("documents")
-        .select("*")
-        .eq("project_id", p.id)
-        .order("created_at", { ascending: false });
-      setDocs(data ?? []);
-      setLoading(false);
+      try {
+        const data = await rpc("documents.list", { projectId: p.id });
+        setDocs(data);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
-  const open = async (path: string) => {
-    const { data, error } = await supabase.storage
-      .from("project-documents")
-      .createSignedUrl(path, 60);
-    if (error || !data) {
-      toast.error("This is a demo placeholder file — actual files appear once your engineer uploads them.");
-      return;
+  const open = async (id: string) => {
+    try {
+      const { url } = await rpc("documents.signedUrl", { id });
+      window.open(url, "_blank");
+    } catch {
+      toast.error("Could not open this file.");
     }
-    window.open(data.signedUrl, "_blank");
   };
 
   return (
@@ -70,11 +67,11 @@ function DocsPage() {
                   </Badge>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  v{d.version} · {new Date(d.created_at).toLocaleDateString()}
+                  v{d.version} · {new Date(d.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <button
-                onClick={() => open(d.file_path)}
+                onClick={() => open(d.id)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary"
               >
                 <Download size={14} /> Open

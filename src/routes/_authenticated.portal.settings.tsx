@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Star } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -21,7 +21,7 @@ function SettingsPage() {
   const { lang, setLang } = useI18n();
   const [project, setProject] = useState<any>(null);
   const [rated, setRated] = useState<any>(null);
-  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [fullName, setFullName] = useState(profile?.fullName ?? "");
   const [mobile, setMobile] = useState(profile?.mobile ?? "");
   const [stars, setStars] = useState(0);
   const [feedback, setFeedback] = useState("");
@@ -30,7 +30,7 @@ function SettingsPage() {
   const [refNote, setRefNote] = useState("");
 
   useEffect(() => {
-    setFullName(profile?.full_name ?? "");
+    setFullName(profile?.fullName ?? "");
     setMobile(profile?.mobile ?? "");
   }, [profile]);
 
@@ -39,50 +39,49 @@ function SettingsPage() {
       const p = await fetchUserPrimaryProject();
       setProject(p);
       if (!p) return;
-      const { data } = await supabase
-        .from("project_ratings")
-        .select("*")
-        .eq("project_id", p.id)
-        .maybeSingle();
+      const data = await rpc("ratings.get", { projectId: p.id });
       setRated(data);
     })();
   }, []);
 
   const saveProfile = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ full_name: fullName, mobile, language: lang })
-      .eq("id", user.id);
-    if (error) return toast.error(error.message);
-    toast.success("Profile saved");
-    refresh();
+    try {
+      await rpc("me.updateProfile", { fullName, mobile, language: lang });
+      toast.success("Profile saved");
+      refresh();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const submitRating = async () => {
     if (!user || !project || !stars) return;
-    const { error } = await supabase
-      .from("project_ratings")
-      .insert({ project_id: project.id, client_id: user.id, stars, feedback });
-    if (error) return toast.error(error.message);
-    toast.success("Thank you for your feedback");
-    setRated({ stars, feedback });
+    try {
+      await rpc("ratings.create", { projectId: project.id, stars, feedback });
+      toast.success("Thank you for your feedback");
+      setRated({ stars, feedback });
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const submitReferral = async () => {
     if (!user || !project) return;
-    const { error } = await supabase.from("referrals").insert({
-      project_id: project.id,
-      referrer_id: user.id,
-      referee_name: refName,
-      referee_contact: refContact,
-      note: refNote,
-    });
-    if (error) return toast.error(error.message);
-    toast.success("Referral shared — thank you!");
-    setRefName("");
-    setRefContact("");
-    setRefNote("");
+    try {
+      await rpc("referrals.create", {
+        projectId: project.id,
+        refereeName: refName,
+        refereeContact: refContact,
+        note: refNote || undefined,
+      });
+      toast.success("Referral shared — thank you!");
+      setRefName("");
+      setRefContact("");
+      setRefNote("");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const showHandover = project && (project.status === "completed" || project.status === "handover");

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, UserPlus, Copy } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,15 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
   component: AdminUsers,
 });
 
+function generateTempPassword(): string {
+  const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const arr = new Uint32Array(14);
+  crypto.getRandomValues(arr);
+  let out = "";
+  for (const n of arr) out += charset[n % charset.length];
+  return out + "@1A";
+}
+
 function AdminUsers() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,18 +51,12 @@ function AdminUsers() {
   });
 
   const load = async () => {
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("user_id, role"),
-    ]);
-    const roleMap = new Map<string, string[]>();
-    (roles ?? []).forEach((r) => {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role);
-      roleMap.set(r.user_id, arr);
-    });
-    setRows((profiles ?? []).map((p) => ({ ...p, roles: roleMap.get(p.id) ?? [] })));
-    setLoading(false);
+    try {
+      const data = await rpc("admin.listUsers");
+      setRows(data);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => {
     load();
@@ -63,12 +66,15 @@ function AdminUsers() {
     setBusy(true);
     setCreated(null);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-invite-user", {
-        body: form,
+      const tempPassword = generateTempPassword();
+      const result = await rpc("admin.inviteUser", {
+        email: form.email,
+        fullName: form.full_name,
+        mobile: form.mobile || undefined,
+        role: form.role,
+        tempPassword,
       });
-      if (error) throw error;
-      const result = data as { email: string; temp_password: string };
-      setCreated(result);
+      setCreated({ email: result.email, temp_password: tempPassword });
       toast.success("User invited");
       setForm({ email: "", full_name: "", mobile: "", role: "client" });
       load();
@@ -198,8 +204,8 @@ function AdminUsers() {
           {rows.map((u) => (
             <Card key={u.id} className="flex items-center justify-between gap-4 p-4">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-navy-deep">{u.full_name || "(no name)"}</p>
-                <p className="text-xs text-muted-foreground">{u.mobile}</p>
+                <p className="font-medium text-navy-deep">{u.fullName || "(no name)"}</p>
+                <p className="text-xs text-muted-foreground">{u.email ?? u.mobile}</p>
               </div>
               <div className="flex flex-wrap gap-1">
                 {u.roles.length === 0 ? (

@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { AuthedImage } from "@/components/ui/authed-image";
 
 export const Route = createFileRoute("/_authenticated/portal/progress")({
   component: ProgressGallery,
@@ -25,13 +26,12 @@ function ProgressGallery() {
         setLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("progress_updates")
-        .select("*")
-        .eq("project_id", p.id)
-        .order("taken_at", { ascending: false });
-      setItems(data ?? []);
-      setLoading(false);
+      try {
+        const data = await rpc("progress.list", { projectId: p.id, limit: 200 });
+        setItems(data);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -75,9 +75,9 @@ function ProgressGallery() {
           {filtered.map((u) => (
             <Card key={u.id} className="overflow-hidden">
               <div className="aspect-[4/3] overflow-hidden bg-muted">
-                {u.photo_url && (
-                  <img
-                    src={u.photo_url}
+                {u.photoUrl && (
+                  <AuthedImage
+                    src={u.photoUrl}
                     alt={u.caption ?? "Progress"}
                     className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                     loading="lazy"
@@ -90,7 +90,7 @@ function ProgressGallery() {
                 </Badge>
                 <p className="mt-2 text-sm text-navy-deep">{u.caption}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {new Date(u.taken_at).toLocaleString(undefined, {
+                  {new Date(u.takenAt).toLocaleString(undefined, {
                     dateStyle: "medium",
                     timeStyle: "short",
                   })}

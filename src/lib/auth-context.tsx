@@ -1,25 +1,41 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  getAccessToken,
+  refreshAccessToken,
+  setAccessToken,
+} from "./api-client";
+import { rpc } from "./rpc";
 
 export type AppRole = "client" | "engineer" | "admin";
 
 interface Profile {
   id: string;
-  full_name: string | null;
+  fullName: string | null;
   mobile: string | null;
-  avatar_url: string | null;
+  avatarUrl: string | null;
   language: "en" | "hi";
+}
+
+interface CurrentUser {
+  id: string;
+  email: string;
 }
 
 interface AuthCtx {
   loading: boolean;
-  session: Session | null;
-  user: User | null;
+  user: CurrentUser | null;
   profile: Profile | null;
   roles: AppRole[];
   primaryRole: AppRole | null;
   hasRole: (r: AppRole) => boolean;
+  signIn: (email: string, password: string) => Promise<{ roles: AppRole[]; primaryRole: AppRole | null }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -28,39 +44,82 @@ const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
 
-  const loadUserScope = async (uid: string) => {
-    const [{ data: prof }, { data: roleRows }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(prof as Profile | null);
-    setRoles(((roleRows ?? []) as { role: AppRole }[]).map((r) => r.role));
-  };
+  const loadScope = useCallback(async () => {
+    try {
+      const data = await rpc("me.get");
+      setUser({ id: data.user.id, email: data.user.email });
+      setProfile(
+        data.profile
+          ? {
+              id: data.profile.id,
+              fullName: data.profile.fullName,
+              mobile: data.profile.mobile,
+              avatarUrl: data.profile.avatarUrl,
+              language: data.profile.language,
+            }
+          : null,
+      );
+      setRoles(data.roles as AppRole[]);
+    } catch {
+      setUser(null);
+      setProfile(null);
+      setRoles([]);
+    }
+  }, []);
 
   useEffect(() => {
-    // Listener FIRST (so we never miss SIGNED_IN)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-      if (sess?.user) {
-        // Defer to avoid deadlock with supabase internals
-        setTimeout(() => loadUserScope(sess.user.id), 0);
-      } else {
-        setProfile(null);
-        setRoles([]);
+    (async () => {
+      try {
+        if (!getAccessToken()) {
+          await refreshAccessToken();
+        }
+        if (getAccessToken()) {
+          await loadScope();
+        }
+      } finally {
+        setLoading(false);
       }
-    });
+    })();
+  }, [loadScope]);
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      if (s?.user) loadUserScope(s.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Sign-in failed");
+      }
+      const data = await res.json();
+      setAccessToken(data.accessToken);
+      await loadScope();
+      const newRoles = (data.user?.roles ?? []) as AppRole[];
+      const newPrimary: AppRole | null = newRoles.includes("admin")
+        ? "admin"
+        : newRoles.includes("engineer")
+          ? "engineer"
+          : newRoles.includes("client")
+            ? "client"
+            : null;
+      return { roles: newRoles, primaryRole: newPrimary };
+    },
+    [loadScope],
+  );
 
-    return () => sub.subscription.unsubscribe();
+  const signOut = useCallback(async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setAccessToken(null);
+    setUser(null);
+    setProfile(null);
+    setRoles([]);
   }, []);
 
   const primaryRole: AppRole | null = roles.includes("admin")
@@ -73,18 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value: AuthCtx = {
     loading,
-    session,
-    user: session?.user ?? null,
+    user,
     profile,
     roles,
     primaryRole,
     hasRole: (r) => roles.includes(r),
-    signOut: async () => {
-      await supabase.auth.signOut();
-    },
-    refresh: async () => {
-      if (session?.user) await loadUserScope(session.user.id);
-    },
+    signIn,
+    signOut,
+    refresh: loadScope,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

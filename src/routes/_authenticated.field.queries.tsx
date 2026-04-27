@@ -1,70 +1,112 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { rpc } from "@/lib/rpc";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/field/queries")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    projectId: typeof s.projectId === "string" ? s.projectId : undefined,
+  }),
   component: FieldQueries,
 });
 
 function FieldQueries() {
   const { user } = useAuth();
+  const { projectId: searchProjectId } = Route.useSearch();
+
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectId, setProjectId] = useState<string>("");
   const [queries, setQueries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<any>(null);
   const [replies, setReplies] = useState<any[]>([]);
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = async () => {
-    const p = await fetchUserPrimaryProject();
-    if (!p) return setLoading(false);
-    const { data } = await supabase
-      .from("queries")
-      .select("*")
-      .eq("project_id", p.id)
-      .order("created_at", { ascending: false });
-    setQueries(data ?? []);
-    setLoading(false);
-  };
   useEffect(() => {
-    load();
+    rpc("projects.listMine").then((list) => {
+      setProjects(list);
+      const first = searchProjectId && list.some((p: any) => p.id === searchProjectId)
+        ? searchProjectId
+        : list[0]?.id ?? "";
+      setProjectId(first);
+    });
   }, []);
 
-  const open = async (q: any) => {
+  useEffect(() => {
+    if (!projectId) return;
+    if (pollRef.current) clearInterval(pollRef.current);
+    setLoading(true);
+    setActive(null);
+    rpc("queries.list", { projectId })
+      .then(setQueries)
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  const openQuery = async (q: any) => {
     setActive(q);
-    const { data } = await supabase
-      .from("query_replies")
-      .select("*")
-      .eq("query_id", q.id)
-      .order("created_at");
-    setReplies(data ?? []);
+    const data = await rpc("replies.list", { queryId: q.id });
+    setReplies(data);
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const [threadData, listData] = await Promise.all([
+          rpc("replies.list", { queryId: q.id }),
+          rpc("queries.list", { projectId }),
+        ]);
+        setReplies(threadData);
+        setQueries(listData);
+        setActive((prev: any) => {
+          const updated = listData.find((x: any) => x.id === q.id);
+          return updated ?? prev;
+        });
+      } catch {
+        // ignore poll errors
+      }
+    }, 5000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const send = async () => {
     if (!user || !active || !reply.trim()) return;
     setBusy(true);
-    const { error } = await supabase.from("query_replies").insert({
-      query_id: active.id,
-      author_id: user.id,
-      body: reply,
-    });
-    if (!error) {
-      await supabase.from("queries").update({ status: "answered" }).eq("id", active.id);
+    try {
+      await rpc("replies.create", { queryId: active.id, body: reply });
+      setReply("");
+      const [threadData, listData] = await Promise.all([
+        rpc("replies.list", { queryId: active.id }),
+        rpc("queries.list", { projectId }),
+      ]);
+      setReplies(threadData);
+      setQueries(listData);
+      const updated = listData.find((q: any) => q.id === active.id);
+      if (updated) setActive(updated);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    setReply("");
-    open(active);
-    load();
   };
 
   return (
@@ -74,12 +116,33 @@ function FieldQueries() {
         <h1 className="mt-2 font-display text-2xl font-light text-navy-deep">Client questions</h1>
       </header>
 
+      {!active && projects.length > 1 && (
+        <div className="space-y-1.5">
+          <Label>Project</Label>
+          <Select value={projectId} onValueChange={setProjectId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.code} — {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {loading ? (
         <Skeleton className="h-64" />
       ) : active ? (
         <Card className="flex flex-col p-5">
           <button
-            onClick={() => setActive(null)}
+            onClick={() => {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setActive(null);
+            }}
             className="mb-3 self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
           >
             ← Back
@@ -93,10 +156,10 @@ function FieldQueries() {
             {replies.map((r) => (
               <div
                 key={r.id}
-                className={`rounded-2xl px-4 py-2.5 text-sm ${r.author_id === user?.id ? "bg-navy-deep text-ivory" : "bg-secondary text-navy-deep"}`}
+                className={`rounded-2xl px-4 py-2.5 text-sm ${r.authorId === user?.id ? "bg-navy-deep text-ivory" : "bg-secondary text-navy-deep"}`}
               >
                 <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
-                  {r.author_id === user?.id ? "You" : "Client"}
+                  {r.authorId === user?.id ? "You" : "Client"}
                 </p>
                 <p>{r.body}</p>
               </div>
@@ -114,7 +177,7 @@ function FieldQueries() {
           {queries.map((q) => (
             <button
               key={q.id}
-              onClick={() => open(q)}
+              onClick={() => openQuery(q)}
               className="block w-full rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-gold/40"
             >
               <div className="flex items-center justify-between gap-2">

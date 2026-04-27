@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FolderKanban, Users, MessageSquare, Camera } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,25 +13,29 @@ function AdminDash() {
   const [stats, setStats] = useState<any>(null);
   const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchStats = async () => {
+    const [counts, allProjects] = await Promise.all([
+      rpc("admin.dashboardStats"),
+      rpc("projects.list"),
+    ]);
+    setStats({
+      projects: counts.projectCount,
+      users: counts.userCount,
+      openQ: counts.openQueries,
+      photos: counts.progressCount,
+    });
+    setRecent(allProjects.slice(0, 5));
+    setLoading(false);
+  };
 
   useEffect(() => {
-    (async () => {
-      const [{ count: projects }, { count: users }, { count: openQ }, { count: photos }, { data: rp }] =
-        await Promise.all([
-          supabase.from("projects").select("*", { head: true, count: "exact" }),
-          supabase.from("profiles").select("*", { head: true, count: "exact" }),
-          supabase.from("queries").select("*", { head: true, count: "exact" }).eq("status", "open"),
-          supabase.from("progress_updates").select("*", { head: true, count: "exact" }),
-          supabase
-            .from("projects")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(5),
-        ]);
-      setStats({ projects, users, openQ, photos });
-      setRecent(rp ?? []);
-      setLoading(false);
-    })();
+    fetchStats();
+    intervalRef.current = setInterval(fetchStats, 15000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   return (
@@ -65,7 +69,7 @@ function AdminDash() {
                   <p className="font-medium text-navy-deep">{p.name}</p>
                 </div>
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {p.status} · {p.progress_percent}%
+                  {p.status} · {p.progressPercent}%
                 </span>
               </Card>
             </Link>

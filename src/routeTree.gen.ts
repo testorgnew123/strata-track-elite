@@ -30,10 +30,12 @@ import { Route as AuthenticatedPortalDocumentsRouteImport } from './routes/_auth
 import { Route as AuthenticatedFieldUploadRouteImport } from './routes/_authenticated.field.upload'
 import { Route as AuthenticatedFieldQueriesRouteImport } from './routes/_authenticated.field.queries'
 import { Route as AuthenticatedFieldMilestonesRouteImport } from './routes/_authenticated.field.milestones'
+import { Route as AuthenticatedAdminVisitsRouteImport } from './routes/_authenticated.admin.visits'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
 import { Route as AuthenticatedAdminProjectsRouteImport } from './routes/_authenticated.admin.projects'
 import { Route as AuthenticatedAdminNotificationsRouteImport } from './routes/_authenticated.admin.notifications'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated.admin.audit'
+import { Route as AuthenticatedAdminProjectsIndexRouteImport } from './routes/_authenticated.admin.projects.index'
 import { Route as AuthenticatedAdminProjectsProjectIdRouteImport } from './routes/_authenticated.admin.projects.$projectId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -152,6 +154,12 @@ const AuthenticatedFieldMilestonesRoute =
     path: '/milestones',
     getParentRoute: () => AuthenticatedFieldRoute,
   } as any)
+const AuthenticatedAdminVisitsRoute =
+  AuthenticatedAdminVisitsRouteImport.update({
+    id: '/visits',
+    path: '/visits',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -174,6 +182,12 @@ const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminProjectsIndexRoute =
+  AuthenticatedAdminProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAdminProjectsRoute,
+  } as any)
 const AuthenticatedAdminProjectsProjectIdRoute =
   AuthenticatedAdminProjectsProjectIdRouteImport.update({
     id: '/$projectId',
@@ -192,6 +206,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/projects': typeof AuthenticatedAdminProjectsRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/visits': typeof AuthenticatedAdminVisitsRoute
   '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
   '/field/queries': typeof AuthenticatedFieldQueriesRoute
   '/field/upload': typeof AuthenticatedFieldUploadRoute
@@ -207,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/field/': typeof AuthenticatedFieldIndexRoute
   '/portal/': typeof AuthenticatedPortalIndexRoute
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -214,8 +230,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
-  '/admin/projects': typeof AuthenticatedAdminProjectsRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/visits': typeof AuthenticatedAdminVisitsRoute
   '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
   '/field/queries': typeof AuthenticatedFieldQueriesRoute
   '/field/upload': typeof AuthenticatedFieldUploadRoute
@@ -231,6 +247,7 @@ export interface FileRoutesByTo {
   '/field': typeof AuthenticatedFieldIndexRoute
   '/portal': typeof AuthenticatedPortalIndexRoute
   '/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/admin/projects': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -245,6 +262,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/_authenticated/admin/projects': typeof AuthenticatedAdminProjectsRouteWithChildren
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/admin/visits': typeof AuthenticatedAdminVisitsRoute
   '/_authenticated/field/milestones': typeof AuthenticatedFieldMilestonesRoute
   '/_authenticated/field/queries': typeof AuthenticatedFieldQueriesRoute
   '/_authenticated/field/upload': typeof AuthenticatedFieldUploadRoute
@@ -260,6 +278,7 @@ export interface FileRoutesById {
   '/_authenticated/field/': typeof AuthenticatedFieldIndexRoute
   '/_authenticated/portal/': typeof AuthenticatedPortalIndexRoute
   '/_authenticated/admin/projects/$projectId': typeof AuthenticatedAdminProjectsProjectIdRoute
+  '/_authenticated/admin/projects/': typeof AuthenticatedAdminProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -274,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/projects'
     | '/admin/users'
+    | '/admin/visits'
     | '/field/milestones'
     | '/field/queries'
     | '/field/upload'
@@ -289,6 +309,7 @@ export interface FileRouteTypes {
     | '/field/'
     | '/portal/'
     | '/admin/projects/$projectId'
+    | '/admin/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -296,8 +317,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/admin/audit'
     | '/admin/notifications'
-    | '/admin/projects'
     | '/admin/users'
+    | '/admin/visits'
     | '/field/milestones'
     | '/field/queries'
     | '/field/upload'
@@ -313,6 +334,7 @@ export interface FileRouteTypes {
     | '/field'
     | '/portal'
     | '/admin/projects/$projectId'
+    | '/admin/projects'
   id:
     | '__root__'
     | '/'
@@ -326,6 +348,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/notifications'
     | '/_authenticated/admin/projects'
     | '/_authenticated/admin/users'
+    | '/_authenticated/admin/visits'
     | '/_authenticated/field/milestones'
     | '/_authenticated/field/queries'
     | '/_authenticated/field/upload'
@@ -341,6 +364,7 @@ export interface FileRouteTypes {
     | '/_authenticated/field/'
     | '/_authenticated/portal/'
     | '/_authenticated/admin/projects/$projectId'
+    | '/_authenticated/admin/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -499,6 +523,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFieldMilestonesRouteImport
       parentRoute: typeof AuthenticatedFieldRoute
     }
+    '/_authenticated/admin/visits': {
+      id: '/_authenticated/admin/visits'
+      path: '/visits'
+      fullPath: '/admin/visits'
+      preLoaderRoute: typeof AuthenticatedAdminVisitsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
       path: '/users'
@@ -527,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/projects/': {
+      id: '/_authenticated/admin/projects/'
+      path: '/'
+      fullPath: '/admin/projects/'
+      preLoaderRoute: typeof AuthenticatedAdminProjectsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminProjectsRoute
+    }
     '/_authenticated/admin/projects/$projectId': {
       id: '/_authenticated/admin/projects/$projectId'
       path: '/$projectId'
@@ -539,12 +577,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminProjectsRouteChildren {
   AuthenticatedAdminProjectsProjectIdRoute: typeof AuthenticatedAdminProjectsProjectIdRoute
+  AuthenticatedAdminProjectsIndexRoute: typeof AuthenticatedAdminProjectsIndexRoute
 }
 
 const AuthenticatedAdminProjectsRouteChildren: AuthenticatedAdminProjectsRouteChildren =
   {
     AuthenticatedAdminProjectsProjectIdRoute:
       AuthenticatedAdminProjectsProjectIdRoute,
+    AuthenticatedAdminProjectsIndexRoute: AuthenticatedAdminProjectsIndexRoute,
   }
 
 const AuthenticatedAdminProjectsRouteWithChildren =
@@ -557,6 +597,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminNotificationsRoute: typeof AuthenticatedAdminNotificationsRoute
   AuthenticatedAdminProjectsRoute: typeof AuthenticatedAdminProjectsRouteWithChildren
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminVisitsRoute: typeof AuthenticatedAdminVisitsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -565,6 +606,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminNotificationsRoute: AuthenticatedAdminNotificationsRoute,
   AuthenticatedAdminProjectsRoute: AuthenticatedAdminProjectsRouteWithChildren,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminVisitsRoute: AuthenticatedAdminVisitsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 

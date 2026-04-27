@@ -1,7 +1,8 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, Loader2, UserPlus, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, Download, Loader2, Plus, Trash2, UserPlus, X } from "lucide-react";
+import { rpc } from "@/lib/rpc";
+import { getAccessToken } from "@/lib/api-client";
 import { generateProjectReport } from "@/lib/server/pdf-report";
 import { projectStatusLabel } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
@@ -43,19 +44,27 @@ function ProjectDetail() {
   const [addOpen, setAddOpen] = useState(false);
   const [addUserId, setAddUserId] = useState("");
   const [addRole, setAddRole] = useState<"client" | "engineer">("engineer");
+  const [msOpen, setMsOpen] = useState(false);
+  const [msTitle, setMsTitle] = useState("");
+  const [msDescription, setMsDescription] = useState("");
+  const [msTargetDate, setMsTargetDate] = useState("");
+  const [addingMs, setAddingMs] = useState(false);
 
   const load = async () => {
-    const [{ data: p }, { data: pm }, { data: ms }, { data: profs }] = await Promise.all([
-      supabase.from("projects").select("*").eq("id", projectId).maybeSingle(),
-      supabase.from("project_members").select("*").eq("project_id", projectId),
-      supabase.from("milestones").select("*").eq("project_id", projectId).order("sort_order"),
-      supabase.from("profiles").select("id, full_name, mobile"),
-    ]);
-    setProject(p);
-    setMembers(pm ?? []);
-    setMilestones(ms ?? []);
-    setProfiles(profs ?? []);
-    setLoading(false);
+    try {
+      const [p, pm, ms, profs] = await Promise.all([
+        rpc("projects.get", { projectId }),
+        rpc("members.list", { projectId }),
+        rpc("milestones.list", { projectId }),
+        rpc("admin.listProfiles"),
+      ]);
+      setProject(p);
+      setMembers(pm);
+      setMilestones(ms);
+      setProfiles(profs);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -67,44 +76,84 @@ function ProjectDetail() {
   const updateField = async (
     patch: Partial<{
       name: string;
-      client_display_name: string;
+      clientDisplayName: string;
       address: string;
       status: "planning" | "in_progress" | "on_hold" | "handover" | "completed";
-      progress_percent: number;
+      progressPercent: number;
     }>,
   ) => {
     setSaving(true);
-    const { error } = await supabase.from("projects").update(patch).eq("id", projectId);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    load();
+    try {
+      await rpc("projects.update", { id: projectId, patch });
+      toast.success("Saved");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const addMember = async () => {
     if (!addUserId) return;
-    const { error } = await supabase
-      .from("project_members")
-      .insert({ project_id: projectId, user_id: addUserId, role: addRole });
-    if (error) return toast.error(error.message);
-    toast.success("Member added");
-    setAddOpen(false);
-    setAddUserId("");
-    load();
+    try {
+      await rpc("members.add", { projectId, userId: addUserId, role: addRole });
+      toast.success("Member added");
+      setAddOpen(false);
+      setAddUserId("");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const addMilestone = async () => {
+    if (!msTitle.trim()) return;
+    setAddingMs(true);
+    try {
+      await rpc("milestones.create", {
+        projectId,
+        title: msTitle.trim(),
+        description: msDescription.trim() || undefined,
+        targetDate: msTargetDate || undefined,
+      });
+      toast.success("Milestone added");
+      setMsOpen(false);
+      setMsTitle("");
+      setMsDescription("");
+      setMsTargetDate("");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAddingMs(false);
+    }
+  };
+
+  const deleteMilestone = async (id: string) => {
+    try {
+      await rpc("milestones.delete", { id });
+      toast.success("Milestone deleted");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const removeMember = async (id: string) => {
-    const { error } = await supabase.from("project_members").delete().eq("id", id);
-    if (error) return toast.error(error.message);
-    toast.success("Removed");
-    load();
+    try {
+      await rpc("members.remove", { id });
+      toast.success("Removed");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   const downloadReport = async () => {
     setDownloading(true);
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess.session?.access_token;
+      const token = getAccessToken();
       if (!token) throw new Error("Not signed in");
       const res = await generateProjectReport({ data: { projectId, accessToken: token } });
       const bin = atob(res.base64);
@@ -127,7 +176,7 @@ function ProjectDetail() {
   if (loading) return <Skeleton className="h-96" />;
   if (!project) return <Card className="p-8 text-sm text-muted-foreground">Not found.</Card>;
 
-  const candidates = profiles.filter((p) => !members.some((m) => m.user_id === p.id));
+  const candidates = profiles.filter((p) => !members.some((m) => m.userId === p.id));
 
   return (
     <div className="space-y-6 animate-rise-in">
@@ -142,6 +191,9 @@ function ProjectDetail() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">{project.code}</p>
           <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">{project.name}</h1>
+          {project.clientDisplayName && (
+            <p className="text-xs text-muted-foreground">{project.clientDisplayName}</p>
+          )}
           {project.address && <p className="mt-1 text-xs text-muted-foreground">{project.address}</p>}
         </div>
         <Button onClick={downloadReport} disabled={downloading} variant="outline">
@@ -155,8 +207,8 @@ function ProjectDetail() {
           <Field label="Name" defaultValue={project.name} onSave={(v) => updateField({ name: v })} />
           <Field
             label="Client display name"
-            defaultValue={project.client_display_name ?? ""}
-            onSave={(v) => updateField({ client_display_name: v })}
+            defaultValue={project.clientDisplayName ?? ""}
+            onSave={(v) => updateField({ clientDisplayName: v })}
           />
           <div className="space-y-1.5">
             <Label>Status</Label>
@@ -179,10 +231,10 @@ function ProjectDetail() {
               type="number"
               min={0}
               max={100}
-              defaultValue={project.progress_percent}
-              onBlur={(e) => updateField({ progress_percent: Number(e.target.value) })}
+              defaultValue={project.progressPercent}
+              onBlur={(e) => updateField({ progressPercent: Number(e.target.value) })}
             />
-            <Progress value={project.progress_percent} className="h-1.5" />
+            <Progress value={project.progressPercent} className="h-1.5" />
           </div>
         </div>
         {saving && <p className="mt-3 text-xs text-muted-foreground">Saving…</p>}
@@ -211,7 +263,7 @@ function ProjectDetail() {
                     <SelectContent>
                       {candidates.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.full_name || "(no name)"}
+                          {p.fullName || "(no name)"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -242,16 +294,37 @@ function ProjectDetail() {
         </div>
         <div className="mt-4 space-y-2">
           {members.map((m) => {
-            const p = profileOf(m.user_id);
+            const p = profileOf(m.userId);
             return (
               <div
                 key={m.id}
-                className="flex items-center justify-between rounded-md border border-border p-3"
+                className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-navy-deep">{p?.full_name ?? m.user_id.slice(0, 8)}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.role}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-navy-deep">{p?.fullName ?? m.userId.slice(0, 8)}</p>
+                  <p className="text-[10px] text-muted-foreground">{p?.email ?? ""}</p>
                 </div>
+                <Select
+                  value={m.role}
+                  onValueChange={async (role) => {
+                    try {
+                      await rpc("members.updateRole", { id: m.id, role: role as "client" | "engineer" | "admin" });
+                      toast.success("Role updated");
+                      load();
+                    } catch (e) {
+                      toast.error((e as Error).message);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-28 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="client">Client</SelectItem>
+                    <SelectItem value="engineer">Engineer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="ghost" size="icon" onClick={() => removeMember(m.id)}>
                   <X size={14} />
                 </Button>
@@ -267,17 +340,79 @@ function ProjectDetail() {
       </Card>
 
       <Card className="p-6">
-        <h2 className="font-display text-lg text-navy-deep">Milestones</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg text-navy-deep">Milestones</h2>
+          <Dialog open={msOpen} onOpenChange={setMsOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="bg-navy-deep text-ivory hover:bg-navy">
+                <Plus size={14} /> Add milestone
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add milestone</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Title</Label>
+                  <Input
+                    value={msTitle}
+                    onChange={(e) => setMsTitle(e.target.value)}
+                    placeholder="Milestone title"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Description (optional)</Label>
+                  <Input
+                    value={msDescription}
+                    onChange={(e) => setMsDescription(e.target.value)}
+                    placeholder="Short description"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Target date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={msTargetDate}
+                    onChange={(e) => setMsTargetDate(e.target.value)}
+                  />
+                </div>
+                <Button
+                  onClick={addMilestone}
+                  disabled={!msTitle.trim() || addingMs}
+                  className="w-full bg-navy-deep text-ivory hover:bg-navy"
+                >
+                  {addingMs ? <Loader2 className="animate-spin" size={14} /> : "Add"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
         <ol className="mt-4 space-y-2">
           {milestones.map((m) => (
             <li
               key={m.id}
               className="flex items-center justify-between rounded-md border border-border p-3 text-sm"
             >
-              <span className="text-navy-deep">{m.title}</span>
-              <Badge variant={m.status === "completed" ? "default" : "secondary"} className="capitalize">
-                {m.status.replace("_", " ")}
-              </Badge>
+              <div className="min-w-0 flex-1">
+                <span className="text-navy-deep">{m.title}</span>
+                {m.description && (
+                  <p className="mt-0.5 text-xs text-muted-foreground">{m.description}</p>
+                )}
+                {m.targetDate && (
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">
+                    Target: {new Date(m.targetDate).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant={m.status === "completed" ? "default" : "secondary"} className="capitalize">
+                  {m.status.replace("_", " ")}
+                </Badge>
+                <Button variant="ghost" size="icon" onClick={() => deleteMilestone(m.id)}>
+                  <Trash2 size={14} />
+                </Button>
+              </div>
             </li>
           ))}
           {milestones.length === 0 && (

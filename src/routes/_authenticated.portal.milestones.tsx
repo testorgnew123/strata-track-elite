@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { rpc } from "@/lib/rpc";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -25,13 +25,12 @@ function MilestonesPage() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from("milestones")
-      .select("*")
-      .eq("project_id", p.id)
-      .order("sort_order");
-    setItems(data ?? []);
-    setLoading(false);
+    try {
+      const data = await rpc("milestones.list", { projectId: p.id });
+      setItems(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -41,17 +40,15 @@ function MilestonesPage() {
   const acknowledge = async (id: string) => {
     if (!user) return;
     setAcking(id);
-    const { error } = await supabase
-      .from("milestones")
-      .update({ acknowledged_at: new Date().toISOString(), acknowledged_by: user.id })
-      .eq("id", id);
-    setAcking(null);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      await rpc("milestones.acknowledge", { id });
+      toast.success("Milestone acknowledged");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAcking(null);
     }
-    toast.success("Milestone acknowledged");
-    load();
   };
 
   return (
@@ -70,7 +67,7 @@ function MilestonesPage() {
         <ol className="relative space-y-4 border-l-2 border-border pl-6">
           {items.map((m) => {
             const isDone = m.status === "completed";
-            const isAcked = !!m.acknowledged_at;
+            const isAcked = !!m.acknowledgedAt;
             return (
               <li key={m.id} className="relative">
                 <span
@@ -92,14 +89,14 @@ function MilestonesPage() {
                         <p className="mt-1 text-sm text-muted-foreground">{m.description}</p>
                       )}
                       <div className="mt-3 flex flex-wrap gap-3 text-[11px] uppercase tracking-wider">
-                        {m.target_date && (
+                        {m.targetDate && (
                           <span className="text-muted-foreground">
-                            Target: {new Date(m.target_date).toLocaleDateString()}
+                            Target: {new Date(m.targetDate).toLocaleDateString()}
                           </span>
                         )}
-                        {m.completed_at && (
+                        {m.completedAt && (
                           <span className="text-gold">
-                            Completed: {new Date(m.completed_at).toLocaleDateString()}
+                            Completed: {new Date(m.completedAt).toLocaleDateString()}
                           </span>
                         )}
                       </div>
