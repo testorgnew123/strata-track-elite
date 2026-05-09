@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +27,9 @@ export const Route = createFileRoute("/_authenticated/field/milestones")({
 
 function FieldMs() {
   const { projectId: searchProjectId } = Route.useSearch();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Output<"projects.listMine">>([]);
   const [projectId, setProjectId] = useState<string>("");
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Output<"milestones.list">>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [progressValue, setProgressValue] = useState<number>(0);
@@ -37,9 +38,10 @@ function FieldMs() {
   useEffect(() => {
     rpc("projects.listMine").then((list) => {
       setProjects(list);
-      const first = searchProjectId && list.some((p: any) => p.id === searchProjectId)
-        ? searchProjectId
-        : list[0]?.id ?? "";
+      const first =
+        searchProjectId && list.some((p) => p.id === searchProjectId)
+          ? searchProjectId
+          : (list[0]?.id ?? "");
       setProjectId(first);
     });
   }, []);
@@ -47,10 +49,7 @@ function FieldMs() {
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
-    Promise.all([
-      rpc("milestones.list", { projectId }),
-      rpc("projects.get", { projectId }),
-    ])
+    Promise.all([rpc("milestones.list", { projectId }), rpc("projects.get", { projectId })])
       .then(([ms, proj]) => {
         setItems(ms);
         setProgressValue(proj.progressPercent ?? 0);
@@ -132,7 +131,9 @@ function FieldMs() {
                 min={0}
                 max={100}
                 value={progressValue}
-                onChange={(e) => setProgressValue(Math.min(100, Math.max(0, Number(e.target.value))))}
+                onChange={(e) =>
+                  setProgressValue(Math.min(100, Math.max(0, Number(e.target.value))))
+                }
                 className="w-24"
               />
               <Button
@@ -181,7 +182,9 @@ function FieldMs() {
             </Card>
           ))}
           {items.length === 0 && (
-            <Card className="p-8 text-center text-sm text-muted-foreground">No milestones yet.</Card>
+            <Card className="p-8 text-center text-sm text-muted-foreground">
+              No milestones yet.
+            </Card>
           )}
         </div>
       )}

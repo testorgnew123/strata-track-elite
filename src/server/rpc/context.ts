@@ -34,10 +34,7 @@ export async function loadUserScope(userId: string) {
   const [[user], [profile], roleRows] = await Promise.all([
     db.select().from(users).where(eq(users.id, userId)).limit(1),
     db.select().from(profiles).where(eq(profiles.id, userId)).limit(1),
-    db
-      .select({ role: userRoles.role })
-      .from(userRoles)
-      .where(eq(userRoles.userId, userId)),
+    db.select({ role: userRoles.role }).from(userRoles).where(eq(userRoles.userId, userId)),
   ]);
   return {
     user: user ?? null,

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { projectStatusLabel } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/admin/projects/")({
 });
 
 function AdminProjects() {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Output<"projects.list">>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,7 +64,14 @@ function AdminProjects() {
       });
       toast.success("Project created");
       setOpen(false);
-      setForm({ code: "", name: "", client_display_name: "", address: "", start_date: "", expected_handover_date: "" });
+      setForm({
+        code: "",
+        name: "",
+        client_display_name: "",
+        address: "",
+        start_date: "",
+        expected_handover_date: "",
+      });
       load();
     } catch (e) {
       toast.error((e as Error).message);
@@ -92,7 +106,7 @@ function AdminProjects() {
                 <div key={k} className="space-y-1.5">
                   <Label>{label}</Label>
                   <Input
-                    value={(form as any)[k]}
+                    value={(form as Record<string, unknown>)[k] as string}
                     onChange={(e) => setForm({ ...form, [k]: e.target.value })}
                   />
                 </div>
@@ -148,7 +162,9 @@ function AdminProjects() {
               <Card className="p-5 transition-colors hover:border-gold/40">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{p.code}</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {p.code}
+                    </p>
                     <h3 className="font-display text-lg text-navy-deep">{p.name}</h3>
                     {p.clientDisplayName && (
                       <p className="text-xs text-muted-foreground">{p.clientDisplayName}</p>

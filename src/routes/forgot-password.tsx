@@ -81,7 +81,9 @@ function ForgotPasswordPage() {
 
       <div className="flex min-h-screen flex-col bg-background">
         <div className="flex items-center justify-between p-6 lg:hidden">
-          <Link to="/"><BrandMark /></Link>
+          <Link to="/">
+            <BrandMark />
+          </Link>
         </div>
 
         <div className="flex flex-1 items-center justify-center px-5 py-12 md:px-12">
@@ -96,9 +98,7 @@ function ForgotPasswordPage() {
 
             {!sent ? (
               <>
-                <h1 className="font-display text-4xl font-light text-navy-deep">
-                  Forgot password
-                </h1>
+                <h1 className="font-display text-4xl font-light text-navy-deep">Forgot password</h1>
                 <p className="mt-2 text-muted-foreground">
                   Enter your User ID or registered mobile number — we'll email you a one-time code.
                 </p>
@@ -143,8 +143,8 @@ function ForgotPasswordPage() {
                 </div>
                 <h2 className="font-display text-2xl text-navy-deep">Check your inbox</h2>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                  If an account exists for that identifier, we've sent a 6-digit
-                  code to the registered email. The code expires in 10 minutes.
+                  If an account exists for that identifier, we've sent a 6-digit code to the
+                  registered email. The code expires in 10 minutes.
                 </p>
                 <Button asChild variant="outline" className="mt-7 w-full">
                   <Link to="/login">Return to Sign In</Link>

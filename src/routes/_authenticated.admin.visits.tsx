@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarClock, Check, X } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 };
 
 function AdminVisits() {
-  const [visits, setVisits] = useState<any[]>([]);
+  const [visits, setVisits] = useState<Output<"visits.listAll">>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -59,7 +60,9 @@ function AdminVisits() {
       {loading ? (
         <Skeleton className="h-64" />
       ) : visits.length === 0 ? (
-        <Card className="p-10 text-center text-sm text-muted-foreground">No visit requests yet.</Card>
+        <Card className="p-10 text-center text-sm text-muted-foreground">
+          No visit requests yet.
+        </Card>
       ) : (
         <div className="space-y-3">
           {visits.map((v) => (
@@ -84,9 +87,7 @@ function AdminVisits() {
                         <span className="text-muted-foreground"> · {v.requestedSlot}</span>
                       )}
                     </p>
-                    {v.notes && (
-                      <p className="mt-1 text-xs text-muted-foreground">{v.notes}</p>
-                    )}
+                    {v.notes && <p className="mt-1 text-xs text-muted-foreground">{v.notes}</p>}
                     <p className="mt-1 text-[10px] text-muted-foreground">
                       Requested {new Date(v.createdAt).toLocaleDateString()}
                     </p>

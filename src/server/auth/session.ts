@@ -63,10 +63,7 @@ export async function rotateSession(
   const ok = await compareToken(raw, row.refreshTokenHash);
   if (!ok) {
     // Possible token replay — revoke this session.
-    await db
-      .update(sessions)
-      .set({ revokedAt: new Date() })
-      .where(eq(sessions.id, sessionId));
+    await db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, sessionId));
     return null;
   }
 
@@ -89,10 +86,7 @@ export async function rotateSession(
 export async function revokeSessionByRefresh(refreshToken: string): Promise<void> {
   const [sessionId] = refreshToken.split(".");
   if (!sessionId) return;
-  await db
-    .update(sessions)
-    .set({ revokedAt: new Date() })
-    .where(eq(sessions.id, sessionId));
+  await db.update(sessions).set({ revokedAt: new Date() }).where(eq(sessions.id, sessionId));
 }
 
 export async function revokeAllSessions(userId: string): Promise<void> {

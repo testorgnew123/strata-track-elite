@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,12 @@ function FieldQueries() {
   const { user } = useAuth();
   const { projectId: searchProjectId } = Route.useSearch();
 
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Output<"projects.listMine">>([]);
   const [projectId, setProjectId] = useState<string>("");
-  const [queries, setQueries] = useState<any[]>([]);
+  const [queries, setQueries] = useState<Output<"queries.list">>([]);
   const [loading, setLoading] = useState(true);
-  const [active, setActive] = useState<any>(null);
-  const [replies, setReplies] = useState<any[]>([]);
+  const [active, setActive] = useState<Output<"queries.list">[number] | null>(null);
+  const [replies, setReplies] = useState<Output<"replies.list">>([]);
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -42,9 +43,10 @@ function FieldQueries() {
   useEffect(() => {
     rpc("projects.listMine").then((list) => {
       setProjects(list);
-      const first = searchProjectId && list.some((p: any) => p.id === searchProjectId)
-        ? searchProjectId
-        : list[0]?.id ?? "";
+      const first =
+        searchProjectId && list.some((p) => p.id === searchProjectId)
+          ? searchProjectId
+          : (list[0]?.id ?? "");
       setProjectId(first);
     });
   }, []);
@@ -59,7 +61,7 @@ function FieldQueries() {
       .finally(() => setLoading(false));
   }, [projectId]);
 
-  const openQuery = async (q: any) => {
+  const openQuery = async (q: Output<"queries.list">[number]) => {
     setActive(q);
     const data = await rpc("replies.list", { queryId: q.id });
     setReplies(data);
@@ -72,8 +74,8 @@ function FieldQueries() {
         ]);
         setReplies(threadData);
         setQueries(listData);
-        setActive((prev: any) => {
-          const updated = listData.find((x: any) => x.id === q.id);
+        setActive((prev) => {
+          const updated = listData.find((x) => x.id === q.id);
           return updated ?? prev;
         });
       } catch {
@@ -100,7 +102,7 @@ function FieldQueries() {
       ]);
       setReplies(threadData);
       setQueries(listData);
-      const updated = listData.find((q: any) => q.id === active.id);
+      const updated = listData.find((q) => q.id === active.id);
       if (updated) setActive(updated);
     } catch (e) {
       toast.error((e as Error).message);
@@ -150,7 +152,9 @@ function FieldQueries() {
           <h2 className="font-display text-lg text-navy-deep">{active.subject}</h2>
           <div className="mt-3 space-y-2">
             <div className="rounded-2xl bg-secondary px-4 py-2.5 text-sm text-navy-deep">
-              <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Client</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
+                Client
+              </p>
               <p>{active.body}</p>
             </div>
             {replies.map((r) => (
@@ -167,7 +171,11 @@ function FieldQueries() {
           </div>
           <div className="mt-4 flex gap-2">
             <Input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Reply…" />
-            <Button onClick={send} disabled={!reply.trim() || busy} className="bg-navy-deep text-ivory hover:bg-navy">
+            <Button
+              onClick={send}
+              disabled={!reply.trim() || busy}
+              className="bg-navy-deep text-ivory hover:bg-navy"
+            >
               {busy ? <Loader2 className="animate-spin" size={14} /> : <Send size={14} />}
             </Button>
           </div>
@@ -182,7 +190,10 @@ function FieldQueries() {
             >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="truncate font-medium text-navy-deep">{q.subject}</h3>
-                <Badge variant={q.status === "open" ? "default" : "secondary"} className="capitalize">
+                <Badge
+                  variant={q.status === "open" ? "default" : "secondary"}
+                  className="capitalize"
+                >
                   {q.status}
                 </Badge>
               </div>

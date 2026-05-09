@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +33,8 @@ const KINDS = [
 ] as const;
 
 function NotificationsAdmin() {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [emails, setEmails] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Output<"admin.notif.templates">>([]);
+  const [emails, setEmails] = useState<Output<"admin.notif.emailLog">>([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState<string>(KINDS[0]);
   const [subject, setSubject] = useState("");
@@ -42,10 +43,7 @@ function NotificationsAdmin() {
 
   const load = async () => {
     try {
-      const [t, e] = await Promise.all([
-        rpc("admin.notif.templates"),
-        rpc("admin.notif.emailLog"),
-      ]);
+      const [t, e] = await Promise.all([rpc("admin.notif.templates"), rpc("admin.notif.emailLog")]);
       setTemplates(t);
       setEmails(e);
     } finally {
@@ -85,9 +83,12 @@ function NotificationsAdmin() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Notifications</p>
-        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">Templates & send log</h1>
+        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">
+          Templates & send log
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Edit the messages used for in-app notifications. Email delivery activates once a provider is connected.
+          Edit the messages used for in-app notifications. Email delivery activates once a provider
+          is connected.
         </p>
       </header>
 
@@ -146,8 +147,8 @@ function NotificationsAdmin() {
                   <Send size={20} className="mx-auto text-muted-foreground" />
                   <p className="mt-3 text-sm font-medium text-navy-deep">No emails sent yet</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Connect an email provider (Resend) to enable transactional sending.
-                    In-app notifications continue to work without it.
+                    Connect an email provider (Resend) to enable transactional sending. In-app
+                    notifications continue to work without it.
                   </p>
                 </div>
               </Card>
@@ -160,7 +161,13 @@ function NotificationsAdmin() {
                       <p className="truncate text-muted-foreground">{e.recipientEmail}</p>
                     </div>
                     <Badge
-                      variant={e.status === "sent" ? "default" : e.status === "failed" ? "destructive" : "secondary"}
+                      variant={
+                        e.status === "sent"
+                          ? "default"
+                          : e.status === "failed"
+                            ? "destructive"
+                            : "secondary"
+                      }
                       className="capitalize"
                     >
                       {e.status}

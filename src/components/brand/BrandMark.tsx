@@ -33,10 +33,7 @@ export function BrandMark({ variant = "dark", showWordmark = true, className }: 
           >
             SingleStop
           </span>
-          <span
-            className="text-[9px] uppercase tracking-[0.22em] mt-0.5"
-            style={{ color: gold }}
-          >
+          <span className="text-[9px] uppercase tracking-[0.22em] mt-0.5" style={{ color: gold }}>
             Building Solutions
           </span>
         </div>

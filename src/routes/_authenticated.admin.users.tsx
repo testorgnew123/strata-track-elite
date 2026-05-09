@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, UserPlus, Copy } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,7 +39,7 @@ function generateTempPassword(): string {
 }
 
 function AdminUsers() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<Output<"admin.listUsers">>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -120,18 +121,25 @@ function AdminUsers() {
                     Account created
                   </p>
                   <p className="mt-2 text-sm text-navy-deep">
-                    Share these credentials with the new user — they should sign in and change the password.
+                    Share these credentials with the new user — they should sign in and change the
+                    password.
                   </p>
                   <div className="mt-3 space-y-2 text-xs">
                     <div className="flex items-center justify-between rounded bg-background p-2">
                       <span className="font-mono">{created.email}</span>
-                      <button onClick={() => copy(created.email)} className="text-muted-foreground hover:text-navy-deep">
+                      <button
+                        onClick={() => copy(created.email)}
+                        className="text-muted-foreground hover:text-navy-deep"
+                      >
                         <Copy size={12} />
                       </button>
                     </div>
                     <div className="flex items-center justify-between rounded bg-background p-2">
                       <span className="font-mono">{created.temp_password}</span>
-                      <button onClick={() => copy(created.temp_password)} className="text-muted-foreground hover:text-navy-deep">
+                      <button
+                        onClick={() => copy(created.temp_password)}
+                        className="text-muted-foreground hover:text-navy-deep"
+                      >
                         <Copy size={12} />
                       </button>
                     </div>

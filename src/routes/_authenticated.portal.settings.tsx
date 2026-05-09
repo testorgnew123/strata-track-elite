@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -19,8 +20,8 @@ export const Route = createFileRoute("/_authenticated/portal/settings")({
 function SettingsPage() {
   const { user, profile, refresh } = useAuth();
   const { lang, setLang } = useI18n();
-  const [project, setProject] = useState<any>(null);
-  const [rated, setRated] = useState<any>(null);
+  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
+  const [rated, setRated] = useState<Output<"ratings.get">>(null);
   const [fullName, setFullName] = useState(profile?.fullName ?? "");
   const [mobile, setMobile] = useState(profile?.mobile ?? "");
   const [stars, setStars] = useState(0);
@@ -90,7 +91,9 @@ function SettingsPage() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Settings</p>
-        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">Profile & preferences</h1>
+        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">
+          Profile & preferences
+        </h1>
       </header>
 
       <Card className="p-6">
@@ -196,11 +199,20 @@ function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="refContact">Phone or email</Label>
-                <Input id="refContact" value={refContact} onChange={(e) => setRefContact(e.target.value)} />
+                <Input
+                  id="refContact"
+                  value={refContact}
+                  onChange={(e) => setRefContact(e.target.value)}
+                />
               </div>
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="refNote">A short note (optional)</Label>
-                <Textarea id="refNote" rows={2} value={refNote} onChange={(e) => setRefNote(e.target.value)} />
+                <Textarea
+                  id="refNote"
+                  rows={2}
+                  value={refNote}
+                  onChange={(e) => setRefNote(e.target.value)}
+                />
               </div>
             </div>
             <Button

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/admin/audit")({
 });
 
 function AdminAudit() {
-  const [rows, setRows] = useState<any[]>([]);
+  const [rows, setRows] = useState<Output<"admin.audit.list">>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,9 +47,7 @@ function AdminAudit() {
                   {r.entityType} · {r.entityId?.slice(0, 8)}
                 </p>
               </div>
-              <p className="text-muted-foreground">
-                {new Date(r.createdAt).toLocaleString()}
-              </p>
+              <p className="text-muted-foreground">{new Date(r.createdAt).toLocaleString()}</p>
             </Card>
           ))}
         </div>

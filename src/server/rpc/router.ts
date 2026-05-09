@@ -10,12 +10,10 @@ export type RpcHandler<I, O> = {
 export type Router = typeof rawHandlers;
 export type RouterKeys = keyof Router;
 
-export type Input<K extends RouterKeys> = Router[K] extends RpcHandler<infer I, unknown>
-  ? I
-  : never;
-export type Output<K extends RouterKeys> = Router[K] extends RpcHandler<unknown, infer O>
-  ? Awaited<O>
-  : never;
+export type Input<K extends RouterKeys> =
+  Router[K] extends RpcHandler<infer I, infer _O> ? I : never;
+export type Output<K extends RouterKeys> =
+  Router[K] extends RpcHandler<infer _I, infer O> ? Awaited<O> : never;
 
 export function getHandler<K extends RouterKeys>(name: K): Router[K] {
   return rawHandlers[name];

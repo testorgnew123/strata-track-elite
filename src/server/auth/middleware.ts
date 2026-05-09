@@ -1,9 +1,9 @@
-import { getWebRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 import { AuthError } from "../authz";
 import { verifyAccessToken, type AccessClaims } from "./jwt";
 
 export async function requireAuth(): Promise<AccessClaims> {
-  const req = getWebRequest();
+  const req = getRequest();
   if (!req) throw new AuthError("No request context");
   const authHeader = req.headers.get("authorization");
   if (!authHeader) throw new AuthError("Missing Authorization header");

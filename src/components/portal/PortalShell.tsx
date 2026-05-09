@@ -50,14 +50,22 @@ export function PortalShell({ navItems, layout = "sidebar", children }: Props) {
       {/* Top bar */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full items-center justify-between px-4 md:px-8">
-          <Link to={primaryRole === "admin" ? "/admin" : primaryRole === "engineer" ? "/field" : "/portal"}>
+          <Link
+            to={
+              primaryRole === "admin" ? "/admin" : primaryRole === "engineer" ? "/field" : "/portal"
+            }
+          >
             <BrandMark />
           </Link>
 
           <div className="flex items-center gap-1.5">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 gap-1.5 px-2.5 text-xs uppercase tracking-wider">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 gap-1.5 px-2.5 text-xs uppercase tracking-wider"
+                >
                   <Languages size={14} />
                   {lang.toUpperCase()}
                 </Button>
@@ -145,8 +153,7 @@ function NavList({ items, orientation }: { items: NavItem[]; orientation: "verti
           <Link
             to={item.to}
             activeProps={{
-              className:
-                "bg-secondary text-navy-deep font-medium border-l-2 border-gold pl-[10px]",
+              className: "bg-secondary text-navy-deep font-medium border-l-2 border-gold pl-[10px]",
             }}
             inactiveProps={{
               className: "text-muted-foreground hover:text-navy-deep hover:bg-secondary/60 pl-3",

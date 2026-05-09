@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Camera, ListChecks, MessageSquare } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { projectStatusLabel } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,16 +14,18 @@ export const Route = createFileRoute("/_authenticated/field/")({
 });
 
 function FieldDashboard() {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [stats, setStats] = useState<Record<string, { photos: number; openMs: number; queries: number }>>({});
+  const [projects, setProjects] = useState<Output<"projects.listMine">>([]);
+  const [stats, setStats] = useState<
+    Record<string, { photos: number; openMs: number; queries: number }>
+  >({});
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchStats = async (list: any[]) => {
+  const fetchStats = async (list: Output<"projects.listMine">) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const perProject = await Promise.all(
-      list.map(async (p: any) => {
+      list.map(async (p) => {
         const [photos, ms, qs] = await Promise.all([
           rpc("progress.list", { projectId: p.id, limit: 200 }),
           rpc("milestones.list", { projectId: p.id }),
@@ -30,9 +33,9 @@ function FieldDashboard() {
         ]);
         return {
           id: p.id,
-          photos: photos.filter((x: any) => new Date(x.takenAt) >= today).length,
-          openMs: ms.filter((m: any) => m.status !== "completed").length,
-          queries: qs.filter((q: any) => q.status === "open").length,
+          photos: photos.filter((x) => new Date(x.takenAt) >= today).length,
+          openMs: ms.filter((m) => m.status !== "completed").length,
+          queries: qs.filter((q) => q.status === "open").length,
         };
       }),
     );
@@ -74,9 +77,13 @@ function FieldDashboard() {
               <Card key={p.id} className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{p.code}</p>
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                      {p.code}
+                    </p>
                     <h2 className="mt-0.5 font-display text-lg text-navy-deep">{p.name}</h2>
-                    {p.address && <p className="mt-0.5 text-xs text-muted-foreground">{p.address}</p>}
+                    {p.address && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">{p.address}</p>
+                    )}
                   </div>
                   <Badge variant="secondary" className="capitalize shrink-0">
                     {projectStatusLabel[p.status] ?? p.status}
@@ -89,9 +96,27 @@ function FieldDashboard() {
                 <Progress value={p.progressPercent} className="mt-1.5 h-1.5" />
 
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                  <QuickLink to="/field/upload" projectId={p.id} icon={Camera} value={s.photos} label="Photos today" />
-                  <QuickLink to="/field/milestones" projectId={p.id} icon={ListChecks} value={s.openMs} label="Open milestones" />
-                  <QuickLink to="/field/queries" projectId={p.id} icon={MessageSquare} value={s.queries} label="Open queries" />
+                  <QuickLink
+                    to="/field/upload"
+                    projectId={p.id}
+                    icon={Camera}
+                    value={s.photos}
+                    label="Photos today"
+                  />
+                  <QuickLink
+                    to="/field/milestones"
+                    projectId={p.id}
+                    icon={ListChecks}
+                    value={s.openMs}
+                    label="Open milestones"
+                  />
+                  <QuickLink
+                    to="/field/queries"
+                    projectId={p.id}
+                    icon={MessageSquare}
+                    value={s.queries}
+                    label="Open queries"
+                  />
                 </div>
               </Card>
             );
@@ -120,7 +145,9 @@ function QuickLink({
       <div className="flex flex-col items-center rounded-md border border-border bg-secondary/40 p-3 text-center transition-colors hover:border-gold/40">
         <Icon size={16} />
         <p className="mt-1 font-display text-xl font-light text-navy-deep">{value}</p>
-        <p className="mt-0.5 text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">{label}</p>
+        <p className="mt-0.5 text-[9px] uppercase tracking-wider text-muted-foreground leading-tight">
+          {label}
+        </p>
       </div>
     </Link>
   );

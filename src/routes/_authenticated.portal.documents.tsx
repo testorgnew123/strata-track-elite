@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FileText, Download } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/portal/documents")({
 });
 
 function DocsPage() {
-  const [docs, setDocs] = useState<any[]>([]);
+  const [docs, setDocs] = useState<Output<"documents.list">>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

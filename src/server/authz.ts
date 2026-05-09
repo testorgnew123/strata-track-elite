@@ -33,19 +33,11 @@ export async function isAdmin(userId: string): Promise<boolean> {
   return hasRole(userId, "admin");
 }
 
-export async function isProjectMember(
-  userId: string,
-  projectId: string,
-): Promise<boolean> {
+export async function isProjectMember(userId: string, projectId: string): Promise<boolean> {
   const rows = await db
     .select({ id: projectMembers.id })
     .from(projectMembers)
-    .where(
-      and(
-        eq(projectMembers.userId, userId),
-        eq(projectMembers.projectId, projectId),
-      ),
-    )
+    .where(and(eq(projectMembers.userId, userId), eq(projectMembers.projectId, projectId)))
     .limit(1);
   return rows.length > 0;
 }

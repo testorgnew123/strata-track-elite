@@ -1,6 +1,6 @@
 [build]
   command = "npm run build"
-  publish = "dist"
+  publish = "dist/client"
   functions = "netlify/functions"
 
 [build.environment]
@@ -10,7 +10,7 @@
   command = "npm run dev"
   targetPort = 8080
   port = 8888
-  publish = "dist"
+  publish = "dist/client"
   autoLaunch = false
 
 [functions]
@@ -18,17 +18,12 @@
   directory = "netlify/functions"
   included_files = ["drizzle/**", "src/db/**", "src/server/**"]
 
-# TanStack Start netlify preset writes its server entry into .netlify/functions-internal.
-# The preset registers redirects automatically; the SPA fallback below covers any
-# unmatched paths in case the preset is replaced with a plain SPA build.
-
+# /api/* falls through to the Netlify v2 functions in netlify/functions/
+# which self-register their paths via `export const config = { path: ... }`.
+# Defensive fallback; force=false so it does not override TanStack Start's
+# SSR catch-all registered by @netlify/vite-plugin-tanstack-start.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
   force = false
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

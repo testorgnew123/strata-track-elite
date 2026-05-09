@@ -2,6 +2,7 @@ import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Download, Loader2, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { getAccessToken } from "@/lib/api-client";
 import { generateProjectReport } from "@/lib/server/pdf-report";
 import { projectStatusLabel } from "@/lib/portal-data";
@@ -34,10 +35,10 @@ export const Route = createFileRoute("/_authenticated/admin/projects/$projectId"
 
 function ProjectDetail() {
   const { projectId } = useParams({ from: "/_authenticated/admin/projects/$projectId" });
-  const [project, setProject] = useState<any>(null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [milestones, setMilestones] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [project, setProject] = useState<Output<"projects.get">>(null);
+  const [members, setMembers] = useState<Output<"members.list">>([]);
+  const [milestones, setMilestones] = useState<Output<"milestones.list">>([]);
+  const [profiles, setProfiles] = useState<Output<"admin.listProfiles">>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -189,12 +190,16 @@ function ProjectDetail() {
 
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">{project.code}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+            {project.code}
+          </p>
           <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">{project.name}</h1>
           {project.clientDisplayName && (
             <p className="text-xs text-muted-foreground">{project.clientDisplayName}</p>
           )}
-          {project.address && <p className="mt-1 text-xs text-muted-foreground">{project.address}</p>}
+          {project.address && (
+            <p className="mt-1 text-xs text-muted-foreground">{project.address}</p>
+          )}
         </div>
         <Button onClick={downloadReport} disabled={downloading} variant="outline">
           {downloading ? <Loader2 className="animate-spin" /> : <Download size={14} />}
@@ -204,7 +209,11 @@ function ProjectDetail() {
 
       <Card className="p-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Name" defaultValue={project.name} onSave={(v) => updateField({ name: v })} />
+          <Field
+            label="Name"
+            defaultValue={project.name}
+            onSave={(v) => updateField({ name: v })}
+          />
           <Field
             label="Client display name"
             defaultValue={project.clientDisplayName ?? ""}
@@ -212,7 +221,14 @@ function ProjectDetail() {
           />
           <div className="space-y-1.5">
             <Label>Status</Label>
-            <Select value={project.status} onValueChange={(v) => updateField({ status: v as "planning" | "in_progress" | "on_hold" | "handover" | "completed" })}>
+            <Select
+              value={project.status}
+              onValueChange={(v) =>
+                updateField({
+                  status: v as "planning" | "in_progress" | "on_hold" | "handover" | "completed",
+                })
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -271,7 +287,7 @@ function ProjectDetail() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Role on this project</Label>
-                  <Select value={addRole} onValueChange={(v) => setAddRole(v as any)}>
+                  <Select value={addRole} onValueChange={(v) => setAddRole(v as "client" | "engineer" | "admin")}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -301,14 +317,19 @@ function ProjectDetail() {
                 className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-navy-deep">{p?.fullName ?? m.userId.slice(0, 8)}</p>
+                  <p className="text-sm font-medium text-navy-deep">
+                    {p?.fullName ?? m.userId.slice(0, 8)}
+                  </p>
                   <p className="text-[10px] text-muted-foreground">{p?.email ?? ""}</p>
                 </div>
                 <Select
                   value={m.role}
                   onValueChange={async (role) => {
                     try {
-                      await rpc("members.updateRole", { id: m.id, role: role as "client" | "engineer" | "admin" });
+                      await rpc("members.updateRole", {
+                        id: m.id,
+                        role: role as "client" | "engineer" | "admin",
+                      });
                       toast.success("Role updated");
                       load();
                     } catch (e) {
@@ -406,7 +427,10 @@ function ProjectDetail() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant={m.status === "completed" ? "default" : "secondary"} className="capitalize">
+                <Badge
+                  variant={m.status === "completed" ? "default" : "secondary"}
+                  className="capitalize"
+                >
                   {m.status.replace("_", " ")}
                 </Badge>
                 <Button variant="ghost" size="icon" onClick={() => deleteMilestone(m.id)}>
@@ -437,7 +461,11 @@ function Field({
   return (
     <div className="space-y-1.5">
       <Label>{label}</Label>
-      <Input value={v} onChange={(e) => setV(e.target.value)} onBlur={() => v !== defaultValue && onSave(v)} />
+      <Input
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => v !== defaultValue && onSave(v)}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Circle, Star, Send, UserPlus } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -19,9 +20,9 @@ export const Route = createFileRoute("/_authenticated/portal/readiness")({
 
 function ReadinessPage() {
   const { user } = useAuth();
-  const [project, setProject] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
-  const [rating, setRating] = useState<any>(null);
+  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
+  const [items, setItems] = useState<Output<"readiness.list">>([]);
+  const [rating, setRating] = useState<Output<"ratings.get">>(null);
   const [stars, setStars] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [refName, setRefName] = useState("");
@@ -66,7 +67,8 @@ function ReadinessPage() {
   };
 
   const submitReferral = async () => {
-    if (!user || !project || !refName || !refContact) return toast.error("Name and contact required");
+    if (!user || !project || !refName || !refContact)
+      return toast.error("Name and contact required");
     setBusy(true);
     try {
       await rpc("referrals.create", {
@@ -127,7 +129,9 @@ function ReadinessPage() {
           {isHandover && (
             <>
               <Card className="p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Your experience</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+                  Your experience
+                </p>
                 <h2 className="mt-2 font-display text-xl text-navy-deep">
                   {rating ? "Thanks for rating us" : "Rate your project"}
                 </h2>
@@ -172,10 +176,10 @@ function ReadinessPage() {
               </Card>
 
               <Card className="p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Refer a friend</p>
-                <h2 className="mt-2 font-display text-xl text-navy-deep">
-                  Know someone building?
-                </h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+                  Refer a friend
+                </p>
+                <h2 className="mt-2 font-display text-xl text-navy-deep">Know someone building?</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Share their details — we'll reach out gently and you'll receive a thank-you reward
                   on their project sign-off.
@@ -187,7 +191,11 @@ function ReadinessPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="rc">Phone or email</Label>
-                    <Input id="rc" value={refContact} onChange={(e) => setRefContact(e.target.value)} />
+                    <Input
+                      id="rc"
+                      value={refContact}
+                      onChange={(e) => setRefContact(e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="mt-3 space-y-1.5">

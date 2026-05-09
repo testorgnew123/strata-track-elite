@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Camera, ListChecks, MessageSquare, CalendarClock, Star } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject, projectStatusLabel } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -17,12 +18,12 @@ export const Route = createFileRoute("/_authenticated/portal/")({
 function PortalOverview() {
   const { profile, user } = useAuth();
   const { t } = useI18n();
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
   const [stats, setStats] = useState<{
     pendingAcks: number;
     openQueries: number;
-    nextMilestone: any;
-    recentPhoto: any;
+    nextMilestone: Output<"milestones.list">[number] | null;
+    recentPhoto: Output<"progress.list">[number] | null;
     rated: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ function PortalOverview() {
       const photo = progressRows[0] ?? null;
       setStats({
         pendingAcks: ms.filter((m) => m.status === "completed" && !m.acknowledgedAt).length,
-        openQueries: qs.filter((q: any) => q.status === "open").length,
+        openQueries: qs.filter((q) => q.status === "open").length,
         nextMilestone: ms.find((m) => m.status !== "completed") ?? null,
         recentPhoto: photo,
         rated: !!rating,

@@ -1,16 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  getAccessToken,
-  refreshAccessToken,
-  setAccessToken,
-} from "./api-client";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { getAccessToken, refreshAccessToken, setAccessToken } from "./api-client";
 import { rpc } from "./rpc";
 
 export type AppRole = "client" | "engineer" | "admin";
@@ -35,7 +24,10 @@ interface AuthCtx {
   roles: AppRole[];
   primaryRole: AppRole | null;
   hasRole: (r: AppRole) => boolean;
-  signIn: (email: string, password: string) => Promise<{ roles: AppRole[]; primaryRole: AppRole | null }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ roles: AppRole[]; primaryRole: AppRole | null }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }

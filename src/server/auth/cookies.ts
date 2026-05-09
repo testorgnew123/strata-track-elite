@@ -14,13 +14,7 @@ export function buildRefreshCookie(token: string): string {
 }
 
 export function buildClearedRefreshCookie(): string {
-  const parts = [
-    `${REFRESH_COOKIE_NAME}=`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=0",
-  ];
+  const parts = [`${REFRESH_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
   if (process.env.NODE_ENV === "production") parts.push("Secure");
   return parts.join("; ");
 }

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -19,8 +20,8 @@ export const Route = createFileRoute("/_authenticated/portal/visits")({
 
 function VisitsPage() {
   const { user } = useAuth();
-  const [visits, setVisits] = useState<any[]>([]);
-  const [project, setProject] = useState<any>(null);
+  const [visits, setVisits] = useState<Output<"visits.list">>([]);
+  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState("");
   const [slot, setSlot] = useState("Morning, 10:00 AM");
@@ -70,7 +71,9 @@ function VisitsPage() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Site visits</p>
-        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">Walk through your site</h1>
+        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">
+          Walk through your site
+        </h1>
       </header>
 
       <Card className="p-6">
@@ -78,18 +81,39 @@ function VisitsPage() {
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="date">Preferred date</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+            <Input
+              id="date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="slot">Preferred time</Label>
-            <Input id="slot" value={slot} onChange={(e) => setSlot(e.target.value)} placeholder="Morning, 10:00 AM" />
+            <Input
+              id="slot"
+              value={slot}
+              onChange={(e) => setSlot(e.target.value)}
+              placeholder="Morning, 10:00 AM"
+            />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="What would you like to focus on?" />
+            <Textarea
+              id="notes"
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="What would you like to focus on?"
+            />
           </div>
         </div>
-        <Button onClick={request} disabled={!date || submitting} className="mt-4 bg-navy-deep text-ivory hover:bg-navy">
+        <Button
+          onClick={request}
+          disabled={!date || submitting}
+          className="mt-4 bg-navy-deep text-ivory hover:bg-navy"
+        >
           {submitting ? <Loader2 className="animate-spin" /> : "Request visit"}
         </Button>
       </Card>
@@ -114,11 +138,16 @@ function VisitsPage() {
                       day: "numeric",
                       month: "long",
                     })}
-                    {v.requestedSlot && <span className="text-muted-foreground"> · {v.requestedSlot}</span>}
+                    {v.requestedSlot && (
+                      <span className="text-muted-foreground"> · {v.requestedSlot}</span>
+                    )}
                   </p>
                   {v.notes && <p className="mt-1 text-xs text-muted-foreground">{v.notes}</p>}
                 </div>
-                <Badge variant={v.status === "requested" ? "default" : "secondary"} className="capitalize">
+                <Badge
+                  variant={v.status === "requested" ? "default" : "secondary"}
+                  className="capitalize"
+                >
                   {v.status}
                 </Badge>
               </Card>

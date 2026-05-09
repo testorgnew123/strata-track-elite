@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { FolderKanban, Users, MessageSquare, Camera } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -10,8 +11,8 @@ export const Route = createFileRoute("/_authenticated/admin/")({
 });
 
 function AdminDash() {
-  const [stats, setStats] = useState<any>(null);
-  const [recent, setRecent] = useState<any[]>([]);
+  const [stats, setStats] = useState<{ projects: number; users: number; openQ: number; photos: number } | null>(null);
+  const [recent, setRecent] = useState<Output<"projects.list">>([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -42,7 +43,9 @@ function AdminDash() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Admin</p>
-        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">Operations dashboard</h1>
+        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">
+          Operations dashboard
+        </h1>
       </header>
 
       {loading ? (
@@ -65,7 +68,9 @@ function AdminDash() {
             <Link key={p.id} to="/admin/projects">
               <Card className="flex items-center justify-between p-4 transition-colors hover:border-gold/40">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{p.code}</p>
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    {p.code}
+                  </p>
                   <p className="font-medium text-navy-deep">{p.name}</p>
                 </div>
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">

@@ -42,7 +42,13 @@ export async function sendEmail({
 
   try {
     const transport = createTransport();
-    await transport.sendMail({ from, to, subject, html, text: text ?? html.replace(/<[^>]+>/g, "") });
+    await transport.sendMail({
+      from,
+      to,
+      subject,
+      html,
+      text: text ?? html.replace(/<[^>]+>/g, ""),
+    });
     if (kind) await logEmail({ userId, to, subject, kind, status: "sent" });
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err);

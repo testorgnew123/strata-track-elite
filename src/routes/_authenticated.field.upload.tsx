@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Camera, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { useAuth } from "@/lib/auth-context";
 import { watermarkImage } from "@/lib/watermark";
 import { getAccessToken, refreshAccessToken } from "@/lib/api-client";
@@ -30,7 +31,7 @@ function UploadPage() {
   const { user } = useAuth();
   const { projectId: searchProjectId } = Route.useSearch();
 
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Output<"projects.listMine">>([]);
   const [projectId, setProjectId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -41,9 +42,10 @@ function UploadPage() {
   useEffect(() => {
     rpc("projects.listMine").then((list) => {
       setProjects(list);
-      const first = searchProjectId && list.some((p: any) => p.id === searchProjectId)
-        ? searchProjectId
-        : list[0]?.id ?? "";
+      const first =
+        searchProjectId && list.some((p) => p.id === searchProjectId)
+          ? searchProjectId
+          : (list[0]?.id ?? "");
       setProjectId(first);
     });
   }, []);
@@ -103,7 +105,9 @@ function UploadPage() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Upload</p>
-        <h1 className="mt-2 font-display text-2xl font-light text-navy-deep">Post a progress update</h1>
+        <h1 className="mt-2 font-display text-2xl font-light text-navy-deep">
+          Post a progress update
+        </h1>
       </header>
 
       {projects.length > 1 && (
@@ -157,18 +161,25 @@ function UploadPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {["structure", "plumbing", "electrical", "finishing", "exterior", "other"].map((c) => (
-                  <SelectItem key={c} value={c} className="capitalize">
-                    {c}
-                  </SelectItem>
-                ))}
+                {["structure", "plumbing", "electrical", "finishing", "exterior", "other"].map(
+                  (c) => (
+                    <SelectItem key={c} value={c} className="capitalize">
+                      {c}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="cap">Caption</Label>
-            <Textarea id="cap" rows={3} value={caption} onChange={(e) => setCaption(e.target.value)} />
+            <Textarea
+              id="cap"
+              rows={3}
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+            />
           </div>
 
           <Button

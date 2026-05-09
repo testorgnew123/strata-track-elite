@@ -46,12 +46,22 @@ function def<I, O>(
 }
 
 async function recipientEmail(userId: string): Promise<string | null> {
-  const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId)).limit(1);
+  const [u] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
   return u?.email ?? null;
 }
 
 async function notifyMilestoneCompleted(projectId: string, milestoneTitle: string) {
-  const proj = (await db.select({ name: projects.name }).from(projects).where(eq(projects.id, projectId)).limit(1))[0];
+  const proj = (
+    await db
+      .select({ name: projects.name })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .limit(1)
+  )[0];
   const clients = await db
     .select({ userId: projectMembers.userId })
     .from(projectMembers)
@@ -121,7 +131,11 @@ async function notifyVisitDecision(
   requestedDate: string,
   decision: "confirmed" | "cancelled",
 ) {
-  const [proj] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, projectId)).limit(1);
+  const [proj] = await db
+    .select({ name: projects.name })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
   const projName = proj?.name ?? "your project";
   const label = decision === "confirmed" ? "confirmed" : "declined";
   await db.insert(notifications).values({
@@ -144,13 +158,20 @@ async function notifyVisitDecision(
   }
 }
 
-async function notifySiteVisitRequested(projectId: string, requestedDate: string, slot?: string | null) {
+async function notifySiteVisitRequested(
+  projectId: string,
+  requestedDate: string,
+  slot?: string | null,
+) {
   const [proj] = await db
     .select({ name: projects.name })
     .from(projects)
     .where(eq(projects.id, projectId))
     .limit(1);
-  const admins = await db.select({ userId: userRoles.userId }).from(userRoles).where(eq(userRoles.role, "admin"));
+  const admins = await db
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .where(eq(userRoles.role, "admin"));
   if (!admins.length) return;
   const projName = proj?.name ?? "a project";
   const slotStr = slot ? ` (${slot})` : "";
@@ -211,7 +232,13 @@ async function notifyHandoverIfChanged(projectId: string, prevStatus: string, ne
   }
 }
 
-async function audit(actorId: string, action: string, entityType?: string, entityId?: string, metadata?: unknown) {
+async function audit(
+  actorId: string,
+  action: string,
+  entityType?: string,
+  entityId?: string,
+  metadata?: unknown,
+) {
   await db.insert(auditLog).values({
     actorId,
     action,
@@ -265,11 +292,7 @@ export const handlers = {
 
   "me.primaryProject": def(z.object({}).optional(), async (_input, ctx) => {
     if (await isAdmin(ctx.userId)) {
-      const [p] = await db
-        .select()
-        .from(projects)
-        .orderBy(desc(projects.createdAt))
-        .limit(1);
+      const [p] = await db.select().from(projects).orderBy(desc(projects.createdAt)).limit(1);
       return p ?? null;
     }
     const [row] = await db
@@ -346,9 +369,7 @@ export const handlers = {
         name: z.string().optional(),
         clientDisplayName: z.string().optional(),
         address: z.string().optional(),
-        status: z
-          .enum(["planning", "in_progress", "on_hold", "handover", "completed"])
-          .optional(),
+        status: z.enum(["planning", "in_progress", "on_hold", "handover", "completed"]).optional(),
         progressPercent: z.number().int().min(0).max(100).optional(),
         coverImageUrl: z.string().optional(),
         startDate: z.string().optional(),
@@ -434,7 +455,9 @@ export const handlers = {
         .update(projectMembers)
         .set({ role: input.role })
         .where(eq(projectMembers.id, input.id));
-      await audit(ctx.userId, "members.updateRole", "project_member", input.id, { role: input.role });
+      await audit(ctx.userId, "members.updateRole", "project_member", input.id, {
+        role: input.role,
+      });
       return { ok: true };
     },
   ),
@@ -488,8 +511,7 @@ export const handlers = {
       const [prev] = await db.select().from(milestones).where(eq(milestones.id, input.id)).limit(1);
       if (!prev) throw new Error("Milestone not found");
       await assertProjectEngineer(ctx.userId, prev.projectId);
-      const completing =
-        input.patch.status === "completed" && prev.status !== "completed";
+      const completing = input.patch.status === "completed" && prev.status !== "completed";
       const [row] = await db
         .update(milestones)
         .set({
@@ -566,7 +588,11 @@ export const handlers = {
   ),
 
   "progress.delete": def(z.object({ id: uuid }), async (input, ctx) => {
-    const [row] = await db.select().from(progressUpdates).where(eq(progressUpdates.id, input.id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(progressUpdates)
+      .where(eq(progressUpdates.id, input.id))
+      .limit(1);
     if (!row) throw new Error("Not found");
     if (row.authorId !== ctx.userId && !(await isAdmin(ctx.userId))) {
       throw new ForbiddenError();
@@ -828,7 +854,11 @@ export const handlers = {
       }),
     }),
     async (input, ctx) => {
-      const [item] = await db.select().from(readinessItems).where(eq(readinessItems.id, input.id)).limit(1);
+      const [item] = await db
+        .select()
+        .from(readinessItems)
+        .where(eq(readinessItems.id, input.id))
+        .limit(1);
       if (!item) throw new Error("Not found");
       await assertProjectEngineer(ctx.userId, item.projectId);
       const [row] = await db
@@ -907,7 +937,11 @@ export const handlers = {
   ),
 
   "referrals.listMine": def(z.object({}).optional(), async (_input, ctx) => {
-    return db.select().from(referrals).where(eq(referrals.referrerId, ctx.userId)).orderBy(desc(referrals.createdAt));
+    return db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.referrerId, ctx.userId))
+      .orderBy(desc(referrals.createdAt));
   }),
 
   // ===== NOTIFICATIONS =====
@@ -925,20 +959,19 @@ export const handlers = {
     await db
       .update(notifications)
       .set({ readAt: new Date() })
-      .where(
-        and(
-          eq(notifications.recipientId, ctx.userId),
-          inArray(notifications.id, input.ids),
-        ),
-      );
+      .where(and(eq(notifications.recipientId, ctx.userId), inArray(notifications.id, input.ids)));
     return { ok: true };
   }),
 
   // ===== ADMIN =====
   "admin.dashboardStats": def(z.object({}).optional(), async (_input, ctx) => {
     await assertAdmin(ctx.userId);
-    const [{ projectCount }] = await db.select({ projectCount: sql<number>`count(*)::int` }).from(projects);
-    const [{ userCount }] = await db.select({ userCount: sql<number>`count(*)::int` }).from(profiles);
+    const [{ projectCount }] = await db
+      .select({ projectCount: sql<number>`count(*)::int` })
+      .from(projects);
+    const [{ userCount }] = await db
+      .select({ userCount: sql<number>`count(*)::int` })
+      .from(profiles);
     const [{ openQueries }] = await db
       .select({ openQueries: sql<number>`count(*)::int` })
       .from(queries)
@@ -965,7 +998,12 @@ export const handlers = {
   "admin.listProfiles": def(z.object({}).optional(), async (_input, ctx) => {
     await assertAdmin(ctx.userId);
     return db
-      .select({ id: profiles.id, fullName: profiles.fullName, mobile: profiles.mobile, email: users.email })
+      .select({
+        id: profiles.id,
+        fullName: profiles.fullName,
+        mobile: profiles.mobile,
+        email: users.email,
+      })
       .from(profiles)
       .leftJoin(users, eq(users.id, profiles.id))
       .orderBy(asc(profiles.fullName));
@@ -987,10 +1025,7 @@ export const handlers = {
       if (existing.length) throw new Error("User with that email already exists");
 
       const passwordHash = await hashPassword(input.tempPassword);
-      const [user] = await db
-        .insert(users)
-        .values({ email, passwordHash })
-        .returning();
+      const [user] = await db.insert(users).values({ email, passwordHash }).returning();
       await db.insert(profiles).values({
         id: user.id,
         fullName: input.fullName,
@@ -1012,7 +1047,11 @@ export const handlers = {
     z.object({ limit: z.number().int().min(1).max(500).optional() }),
     async (input, ctx) => {
       await assertAdmin(ctx.userId);
-      return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(input.limit ?? 100);
+      return db
+        .select()
+        .from(auditLog)
+        .orderBy(desc(auditLog.createdAt))
+        .limit(input.limit ?? 100);
     },
   ),
 

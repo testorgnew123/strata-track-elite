@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,10 +13,18 @@ export const Route = createFileRoute("/_authenticated/portal/progress")({
   component: ProgressGallery,
 });
 
-const CATS = ["all", "structure", "plumbing", "electrical", "finishing", "exterior", "other"] as const;
+const CATS = [
+  "all",
+  "structure",
+  "plumbing",
+  "electrical",
+  "finishing",
+  "exterior",
+  "other",
+] as const;
 
 function ProgressGallery() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Output<"progress.list">>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof CATS)[number]>("all");
 

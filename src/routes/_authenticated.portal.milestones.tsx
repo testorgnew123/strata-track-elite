@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/portal/milestones")({
 
 function MilestonesPage() {
   const { user } = useAuth();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Output<"milestones.list">>([]);
   const [loading, setLoading] = useState(true);
   const [acking, setAcking] = useState<string | null>(null);
 
@@ -79,7 +80,11 @@ function MilestonesPage() {
                         : "border-border bg-background text-muted-foreground"
                   }`}
                 >
-                  {isDone ? <Check size={12} strokeWidth={3} /> : <Circle size={8} fill="currentColor" />}
+                  {isDone ? (
+                    <Check size={12} strokeWidth={3} />
+                  ) : (
+                    <Circle size={8} fill="currentColor" />
+                  )}
                 </span>
                 <Card className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">

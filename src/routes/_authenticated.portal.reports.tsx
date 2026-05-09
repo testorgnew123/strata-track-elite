@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { getAccessToken } from "@/lib/api-client";
+import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
 import { generateProjectReport } from "@/lib/server/pdf-report";
 import { Card } from "@/components/ui/card";
@@ -14,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/portal/reports")({
 });
 
 function ReportsPage() {
-  const [project, setProject] = useState<any>(null);
+  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
@@ -58,7 +59,9 @@ function ReportsPage() {
     <div className="space-y-6 animate-rise-in">
       <header>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Reports</p>
-        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">Branded progress reports</h1>
+        <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">
+          Branded progress reports
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Download a PDF snapshot of your project — milestones, latest photos, and current progress.
         </p>
@@ -76,14 +79,21 @@ function ReportsPage() {
                 <FileText size={20} />
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{project.code}</p>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {project.code}
+                </p>
                 <h2 className="font-display text-xl text-navy-deep">{project.name}</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Includes header, progress %, milestone timeline, and the 6 most recent site photos.
+                  Includes header, progress %, milestone timeline, and the 6 most recent site
+                  photos.
                 </p>
               </div>
             </div>
-            <Button onClick={download} disabled={busy} className="bg-navy-deep text-ivory hover:bg-navy">
+            <Button
+              onClick={download}
+              disabled={busy}
+              className="bg-navy-deep text-ivory hover:bg-navy"
+            >
               {busy ? <Loader2 className="animate-spin" /> : <Download size={14} />}
               Download PDF
             </Button>
