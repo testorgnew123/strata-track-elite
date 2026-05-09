@@ -38,8 +38,51 @@ drizzle/
 
 # Env
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.sample
 
 # Local-only credentials (do not commit)
 DEMO_CREDENTIALS.local.md
+*.local.md
+*.local.json
+*.local.yml
+*.local.yaml
+credentials.*
+*credentials*.json
+secrets/
+secret.*
+secrets.*
+service-account*.json
+service_account*.json
+auth.json
+firebase-adminsdk*.json
+.aws/
+.ssh/
+
+# Keys / certs
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa*
+id_ed25519*
+
+# Local DB dumps / backups
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.bak
+*.sql.gz
+backup-*.sql
+
+# Misc local-only artifacts
+netlify-dev.log
+.history/
+tmp/
+temp/

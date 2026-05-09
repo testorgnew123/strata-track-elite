@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Send } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,8 @@ export const Route = createFileRoute("/_authenticated/portal/queries")({
 
 function QueriesPage() {
   const { user } = useAuth();
+  const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [queries, setQueries] = useState<Output<"queries.list">>([]);
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -40,22 +40,31 @@ function QueriesPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = async () => {
-    const p = await fetchUserPrimaryProject();
-    setProject(p);
-    if (!p) {
+    if (!project) {
+      setQueries([]);
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const data = await rpc("queries.list", { projectId: p.id });
+      const data = await rpc("queries.list", { projectId: project.id });
       setQueries(data);
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => {
+    if (projectLoading) return;
+    // Switching projects invalidates any open thread.
+    setActive(null);
+    setReplies([]);
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, projectLoading]);
 
   const openThread = async (q: Output<"queries.list">[number]) => {
     setActive(q);

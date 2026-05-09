@@ -44,7 +44,6 @@ function ProjectDetail() {
   const [downloading, setDownloading] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addUserId, setAddUserId] = useState("");
-  const [addRole, setAddRole] = useState<"client" | "engineer">("engineer");
   const [msOpen, setMsOpen] = useState(false);
   const [msTitle, setMsTitle] = useState("");
   const [msDescription, setMsDescription] = useState("");
@@ -98,7 +97,7 @@ function ProjectDetail() {
   const addMember = async () => {
     if (!addUserId) return;
     try {
-      await rpc("members.add", { projectId, userId: addUserId, role: addRole });
+      await rpc("members.add", { projectId, userId: addUserId });
       toast.success("Member added");
       setAddOpen(false);
       setAddUserId("");
@@ -285,18 +284,9 @@ function ProjectDetail() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Role on this project</Label>
-                  <Select value={addRole} onValueChange={(v) => setAddRole(v as "client" | "engineer" | "admin")}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="client">Client</SelectItem>
-                      <SelectItem value="engineer">Engineer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  The user's role on this project mirrors their global role set in Admin → Users.
+                </p>
                 <Button
                   onClick={addMember}
                   disabled={!addUserId}
@@ -322,30 +312,9 @@ function ProjectDetail() {
                   </p>
                   <p className="text-[10px] text-muted-foreground">{p?.email ?? ""}</p>
                 </div>
-                <Select
-                  value={m.role}
-                  onValueChange={async (role) => {
-                    try {
-                      await rpc("members.updateRole", {
-                        id: m.id,
-                        role: role as "client" | "engineer" | "admin",
-                      });
-                      toast.success("Role updated");
-                      load();
-                    } catch (e) {
-                      toast.error((e as Error).message);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-7 w-28 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="engineer">Engineer</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Badge variant="secondary" className="capitalize">
+                  {m.role}
+                </Badge>
                 <Button variant="ghost" size="icon" onClick={() => removeMember(m.id)}>
                   <X size={14} />
                 </Button>

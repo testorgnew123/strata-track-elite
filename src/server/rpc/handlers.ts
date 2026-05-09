@@ -427,16 +427,32 @@ export const handlers = {
     z.object({
       projectId: uuid,
       userId: uuid,
-      role: z.enum(["client", "engineer", "admin"]),
     }),
     async (input, ctx) => {
       await assertAdmin(ctx.userId);
+      // Project role is inherited from the user's global role assigned in admin/users.
+      // No per-project override is allowed.
+      const [globalRole] = await db
+        .select({ role: userRoles.role })
+        .from(userRoles)
+        .where(eq(userRoles.userId, input.userId))
+        .limit(1);
+      if (!globalRole) {
+        throw new Error("User has no global role assigned. Set a role from Admin → Users first.");
+      }
       const [row] = await db
         .insert(projectMembers)
-        .values({ projectId: input.projectId, userId: input.userId, role: input.role })
+        .values({
+          projectId: input.projectId,
+          userId: input.userId,
+          role: globalRole.role,
+        })
         .onConflictDoNothing()
         .returning();
-      await audit(ctx.userId, "members.add", "project_member", row?.id, input);
+      await audit(ctx.userId, "members.add", "project_member", row?.id, {
+        ...input,
+        role: globalRole.role,
+      });
       return row ?? null;
     },
   ),
@@ -1084,6 +1100,7 @@ export const handlers = {
     }),
     async (input, ctx) => {
       await assertAdmin(ctx.userId);
+      console.log("[admin.updateUser] input:", JSON.stringify(input));
 
       if (input.email) {
         const newEmail = input.email.toLowerCase();
@@ -1111,8 +1128,31 @@ export const handlers = {
       }
 
       if (input.role) {
-        await db.delete(userRoles).where(eq(userRoles.userId, input.userId));
-        await db.insert(userRoles).values({ userId: input.userId, role: input.role });
+        const before = await db
+          .select({ role: userRoles.role })
+          .from(userRoles)
+          .where(eq(userRoles.userId, input.userId));
+        console.log(
+          `[admin.updateUser] role change for ${input.userId}: ${before.map((r) => r.role).join(",") || "(none)"} -> ${input.role}`,
+        );
+        const delRes = await db
+          .delete(userRoles)
+          .where(eq(userRoles.userId, input.userId))
+          .returning({ id: userRoles.id });
+        const insRes = await db
+          .insert(userRoles)
+          .values({ userId: input.userId, role: input.role })
+          .returning({ id: userRoles.id, role: userRoles.role });
+        // Project role mirrors the global role — keep them in sync so removing
+        // the per-project role selector cannot leave a stale role behind.
+        const pmRes = await db
+          .update(projectMembers)
+          .set({ role: input.role })
+          .where(eq(projectMembers.userId, input.userId))
+          .returning({ id: projectMembers.id });
+        console.log(
+          `[admin.updateUser] deleted ${delRes.length} userRoles, inserted ${insRes.length} (${insRes[0]?.role}), updated ${pmRes.length} project_members`,
+        );
       }
 
       await audit(ctx.userId, "user.update", "user", input.userId, {

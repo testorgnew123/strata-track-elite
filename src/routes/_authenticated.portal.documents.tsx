@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { FileText, Download, Eye } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,24 +14,31 @@ export const Route = createFileRoute("/_authenticated/portal/documents")({
 });
 
 function DocsPage() {
+  const { selectedProject, loading: projectLoading } = usePortalProject();
   const [docs, setDocs] = useState<Output<"documents.list">>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (projectLoading) return;
+    if (!selectedProject) {
+      setDocs([]);
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
     (async () => {
-      const p = await fetchUserPrimaryProject();
-      if (!p) {
-        setLoading(false);
-        return;
-      }
       try {
-        const data = await rpc("documents.list", { projectId: p.id });
-        setDocs(data);
+        const data = await rpc("documents.list", { projectId: selectedProject.id });
+        if (alive) setDocs(data);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [selectedProject?.id, projectLoading]);
 
   const view = async (id: string) => {
     try {

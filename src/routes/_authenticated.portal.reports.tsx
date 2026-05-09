@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { getAccessToken } from "@/lib/api-client";
-import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { generateProjectReport } from "@/lib/server/pdf-report";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,17 +14,8 @@ export const Route = createFileRoute("/_authenticated/portal/reports")({
 });
 
 function ReportsPage() {
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
-  const [loading, setLoading] = useState(true);
+  const { selectedProject: project, loading } = usePortalProject();
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const p = await fetchUserPrimaryProject();
-      setProject(p);
-      setLoading(false);
-    })();
-  }, []);
 
   const download = async () => {
     if (!project) return;

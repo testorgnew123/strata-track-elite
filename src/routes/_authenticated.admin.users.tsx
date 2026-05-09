@@ -35,6 +35,15 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
 type Role = "client" | "engineer" | "admin";
 type UserRow = Output<"admin.listUsers">[number];
 
+function generateTempPassword(): string {
+  const charset = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const arr = new Uint32Array(14);
+  crypto.getRandomValues(arr);
+  let out = "";
+  for (const n of arr) out += charset[n % charset.length];
+  return out + "@1A";
+}
+
 function AdminUsers() {
   const { user: currentUser } = useAuth();
   const [rows, setRows] = useState<UserRow[]>([]);
@@ -401,6 +410,9 @@ function AdminUsers() {
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Changing role updates this user&apos;s role on every project they belong to.
+              </p>
             </div>
           </div>
           <DialogFooter>

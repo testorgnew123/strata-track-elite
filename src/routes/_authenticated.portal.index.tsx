@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Camera, ListChecks, MessageSquare, CalendarClock, Star } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject, projectStatusLabel } from "@/lib/portal-data";
+import { projectStatusLabel } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
@@ -16,9 +17,9 @@ export const Route = createFileRoute("/_authenticated/portal/")({
 });
 
 function PortalOverview() {
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
   const { t } = useI18n();
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
+  const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [stats, setStats] = useState<{
     pendingAcks: number;
     openQueries: number;
@@ -29,19 +30,22 @@ function PortalOverview() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (projectLoading) return;
+    if (!project) {
+      setStats(null);
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
     (async () => {
-      const p = await fetchUserPrimaryProject();
-      setProject(p);
-      if (!p) {
-        setLoading(false);
-        return;
-      }
       const [ms, qs, progressRows, rating] = await Promise.all([
-        rpc("milestones.list", { projectId: p.id }),
-        rpc("queries.listOpen", { projectId: p.id }),
-        rpc("progress.list", { projectId: p.id, limit: 1 }),
-        rpc("ratings.get", { projectId: p.id }),
+        rpc("milestones.list", { projectId: project.id }),
+        rpc("queries.listOpen", { projectId: project.id }),
+        rpc("progress.list", { projectId: project.id, limit: 1 }),
+        rpc("ratings.get", { projectId: project.id }),
       ]);
+      if (!alive) return;
       const photo = progressRows[0] ?? null;
       setStats({
         pendingAcks: ms.filter((m) => m.status === "completed" && !m.acknowledgedAt).length,
@@ -52,7 +56,10 @@ function PortalOverview() {
       });
       setLoading(false);
     })();
-  }, [user?.id]);
+    return () => {
+      alive = false;
+    };
+  }, [project?.id, projectLoading]);
 
   const greeting = profile?.fullName ? profile.fullName.split(" ")[0] : "there";
 

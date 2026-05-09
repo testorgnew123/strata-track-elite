@@ -20,6 +20,7 @@ export default async (req: Request, _ctx: Context) => {
   if (!procedure) {
     return Response.json({ error: "procedure required" }, { status: 400 });
   }
+  console.log(`[rpc] ${procedure} input:`, JSON.stringify(body.input ?? {}));
   const handler = getHandler(procedure);
   if (!handler) {
     return Response.json({ error: `Unknown procedure: ${procedure}` }, { status: 404 });

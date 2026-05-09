@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Star } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/portal/settings")({
 function SettingsPage() {
   const { user, profile, refresh } = useAuth();
   const { lang, setLang } = useI18n();
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
+  const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [rated, setRated] = useState<Output<"ratings.get">>(null);
   const [fullName, setFullName] = useState(profile?.fullName ?? "");
   const [mobile, setMobile] = useState(profile?.mobile ?? "");
@@ -36,14 +36,20 @@ function SettingsPage() {
   }, [profile]);
 
   useEffect(() => {
+    if (projectLoading) return;
+    if (!project) {
+      setRated(null);
+      return;
+    }
+    let alive = true;
     (async () => {
-      const p = await fetchUserPrimaryProject();
-      setProject(p);
-      if (!p) return;
-      const data = await rpc("ratings.get", { projectId: p.id });
-      setRated(data);
+      const data = await rpc("ratings.get", { projectId: project.id });
+      if (alive) setRated(data);
     })();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [project?.id, projectLoading]);
 
   const saveProfile = async () => {
     if (!user) return;

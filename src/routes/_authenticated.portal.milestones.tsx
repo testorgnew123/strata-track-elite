@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Check, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,18 +16,20 @@ export const Route = createFileRoute("/_authenticated/portal/milestones")({
 
 function MilestonesPage() {
   const { user } = useAuth();
+  const { selectedProject, loading: projectLoading } = usePortalProject();
   const [items, setItems] = useState<Output<"milestones.list">>([]);
   const [loading, setLoading] = useState(true);
   const [acking, setAcking] = useState<string | null>(null);
 
   const load = async () => {
-    const p = await fetchUserPrimaryProject();
-    if (!p) {
+    if (!selectedProject) {
+      setItems([]);
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const data = await rpc("milestones.list", { projectId: p.id });
+      const data = await rpc("milestones.list", { projectId: selectedProject.id });
       setItems(data);
     } finally {
       setLoading(false);
@@ -35,8 +37,10 @@ function MilestonesPage() {
   };
 
   useEffect(() => {
+    if (projectLoading) return;
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProject?.id, projectLoading]);
 
   const acknowledge = async (id: string) => {
     if (!user) return;

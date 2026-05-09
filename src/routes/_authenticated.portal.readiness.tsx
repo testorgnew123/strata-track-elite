@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Circle, Star, Send, UserPlus } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/portal/readiness")({
 
 function ReadinessPage() {
   const { user } = useAuth();
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
+  const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [items, setItems] = useState<Output<"readiness.list">>([]);
   const [rating, setRating] = useState<Output<"ratings.get">>(null);
   const [stars, setStars] = useState(0);
@@ -32,20 +32,31 @@ function ReadinessPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (projectLoading) return;
+    if (!project) {
+      setItems([]);
+      setRating(null);
+      setStars(0);
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
     (async () => {
-      const p = await fetchUserPrimaryProject();
-      setProject(p);
-      if (!p) return setLoading(false);
       const [ri, r] = await Promise.all([
-        rpc("readiness.list", { projectId: p.id }),
-        rpc("ratings.get", { projectId: p.id }),
+        rpc("readiness.list", { projectId: project.id }),
+        rpc("ratings.get", { projectId: project.id }),
       ]);
+      if (!alive) return;
       setItems(ri);
       setRating(r);
-      if (r) setStars(r.stars);
+      setStars(r ? r.stars : 0);
       setLoading(false);
     })();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [project?.id, projectLoading]);
 
   const done = items.filter((i) => i.status === "done").length;
   const total = items.length || 1;

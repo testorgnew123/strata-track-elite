@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,25 +24,32 @@ const CATS = [
 ] as const;
 
 function ProgressGallery() {
+  const { selectedProject, loading: projectLoading } = usePortalProject();
   const [items, setItems] = useState<Output<"progress.list">>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof CATS)[number]>("all");
 
   useEffect(() => {
+    if (projectLoading) return;
+    if (!selectedProject) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    let alive = true;
+    setLoading(true);
     (async () => {
-      const p = await fetchUserPrimaryProject();
-      if (!p) {
-        setLoading(false);
-        return;
-      }
       try {
-        const data = await rpc("progress.list", { projectId: p.id, limit: 200 });
-        setItems(data);
+        const data = await rpc("progress.list", { projectId: selectedProject.id, limit: 200 });
+        if (alive) setItems(data);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [selectedProject?.id, projectLoading]);
 
   const filtered = filter === "all" ? items : items.filter((i) => i.category === filter);
 

@@ -11,6 +11,8 @@ import {
   Settings,
 } from "lucide-react";
 import { PortalShell, type NavItem } from "@/components/portal/PortalShell";
+import { PortalProjectSwitcher } from "@/components/portal/PortalProjectSwitcher";
+import { PortalProjectProvider } from "@/lib/portal-project-context";
 import { RoleGate } from "./_authenticated";
 
 const items: NavItem[] = [
@@ -28,9 +30,12 @@ const items: NavItem[] = [
 export const Route = createFileRoute("/_authenticated/portal")({
   component: () => (
     <RoleGate allow={["client", "admin"]}>
-      <PortalShell navItems={items} layout="sidebar">
-        <Outlet />
-      </PortalShell>
+      <PortalProjectProvider>
+        <PortalShell navItems={items} layout="sidebar">
+          <PortalProjectSwitcher />
+          <Outlet />
+        </PortalShell>
+      </PortalProjectProvider>
     </RoleGate>
   ),
 });

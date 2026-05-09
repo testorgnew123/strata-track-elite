@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
-import { fetchUserPrimaryProject } from "@/lib/portal-data";
+import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ export const Route = createFileRoute("/_authenticated/portal/visits")({
 
 function VisitsPage() {
   const { user } = useAuth();
+  const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [visits, setVisits] = useState<Output<"visits.list">>([]);
-  const [project, setProject] = useState<Output<"me.primaryProject">>(null);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState("");
   const [slot, setSlot] = useState("Morning, 10:00 AM");
@@ -29,22 +29,24 @@ function VisitsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
-    const p = await fetchUserPrimaryProject();
-    setProject(p);
-    if (!p) {
+    if (!project) {
+      setVisits([]);
       setLoading(false);
       return;
     }
+    setLoading(true);
     try {
-      const data = await rpc("visits.list", { projectId: p.id });
+      const data = await rpc("visits.list", { projectId: project.id });
       setVisits(data);
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => {
+    if (projectLoading) return;
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, projectLoading]);
 
   const request = async () => {
     if (!user || !project) return;
