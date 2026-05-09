@@ -92,8 +92,6 @@ function FormPanel() {
             <LoginForm />
           </div>
 
-          <DemoCard />
-
           <p className="mt-8 text-center text-xs text-muted-foreground">
             Account issues? Contact your project manager.
           </p>
@@ -197,38 +195,3 @@ function LoginForm() {
   );
 }
 
-const DEMO = [
-  { label: "Admin", email: "admin@demo.singlestop.com", password: "Demo@Admin2026" },
-  { label: "Engineer", email: "engineer@demo.singlestop.com", password: "Demo@Engg2026" },
-  { label: "Client", email: "client@demo.singlestop.com", password: "Demo@Client2026" },
-];
-
-function DemoCard() {
-  const copy = (e: string, p: string) => {
-    navigator.clipboard.writeText(`${e} / ${p}`);
-    toast.success("Credentials copied");
-  };
-  return (
-    <div className="mt-8 rounded-lg border border-gold/30 bg-gold/5 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold">
-        Demo credentials
-      </p>
-      <div className="mt-3 space-y-2">
-        {DEMO.map((d) => (
-          <button
-            key={d.email}
-            type="button"
-            onClick={() => copy(d.email, d.password)}
-            className="flex w-full items-center justify-between rounded-md border border-transparent px-2 py-1.5 text-left text-xs transition-colors hover:border-gold/30 hover:bg-background"
-          >
-            <span className="font-medium text-navy-deep">{d.label}</span>
-            <span className="font-mono text-[11px] text-muted-foreground">{d.email}</span>
-          </button>
-        ))}
-      </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">
-        Tap a row to copy <span className="font-mono">email / password</span>.
-      </p>
-    </div>
-  );
-}

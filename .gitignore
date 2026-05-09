@@ -40,3 +40,6 @@ drizzle/
 .env
 .env.local
 .env.*.local
+
+# Local-only credentials (do not commit)
+DEMO_CREDENTIALS.local.md
