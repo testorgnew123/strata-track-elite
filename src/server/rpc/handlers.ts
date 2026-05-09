@@ -8,6 +8,7 @@ import {
   milestones,
   notificationTemplates,
   notifications,
+  passwordResetTokens,
   profiles,
   progressUpdates,
   projectMembers,
@@ -644,9 +645,27 @@ export const handlers = {
       const [doc] = await db.select().from(documents).where(eq(documents.id, input.id)).limit(1);
       if (!doc) throw new Error("Document not found");
       await assertProjectMember(ctx.userId, doc.projectId);
-      const { getSignedDownloadUrl } = await import("@/server/storage");
-      const url = await getSignedDownloadUrl("documents", doc.filePath, input.ttlSeconds ?? 300);
-      return { url };
+      const { signBlobToken } = await import("@/server/auth/blob-token");
+      const ttl = input.ttlSeconds ?? 300;
+      const store = "project-documents";
+      const token = await signBlobToken(
+        { store, key: doc.filePath, userId: ctx.userId },
+        ttl,
+      );
+      const lastSeg = doc.filePath.split("/").pop() ?? "document";
+      const filename = lastSeg.replace(/^\d+-[0-9a-f-]{36}-/, "") || lastSeg;
+      const params = new URLSearchParams({
+        store,
+        key: doc.filePath,
+        token,
+        filename,
+      });
+      const base = `/api/blob?${params.toString()}`;
+      return {
+        viewUrl: base,
+        downloadUrl: `${base}&dl=1`,
+        filename,
+      };
     },
   ),
 
@@ -1054,6 +1073,188 @@ export const handlers = {
         .limit(input.limit ?? 100);
     },
   ),
+
+  "admin.updateUser": def(
+    z.object({
+      userId: uuid,
+      email: z.string().email().optional(),
+      fullName: z.string().optional(),
+      mobile: z.string().optional(),
+      role: z.enum(["client", "engineer", "admin"]).optional(),
+    }),
+    async (input, ctx) => {
+      await assertAdmin(ctx.userId);
+
+      if (input.email) {
+        const newEmail = input.email.toLowerCase();
+        const conflict = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.email, newEmail), ne(users.id, input.userId)))
+          .limit(1);
+        if (conflict.length) throw new Error("Another user already uses that email");
+        await db
+          .update(users)
+          .set({ email: newEmail, updatedAt: new Date() })
+          .where(eq(users.id, input.userId));
+      }
+
+      if (input.fullName !== undefined || input.mobile !== undefined) {
+        await db
+          .update(profiles)
+          .set({
+            ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+            ...(input.mobile !== undefined ? { mobile: input.mobile } : {}),
+            updatedAt: new Date(),
+          })
+          .where(eq(profiles.id, input.userId));
+      }
+
+      if (input.role) {
+        await db.delete(userRoles).where(eq(userRoles.userId, input.userId));
+        await db.insert(userRoles).values({ userId: input.userId, role: input.role });
+      }
+
+      await audit(ctx.userId, "user.update", "user", input.userId, {
+        email: input.email,
+        fullName: input.fullName,
+        mobile: input.mobile,
+        role: input.role,
+      });
+      return { ok: true };
+    },
+  ),
+
+  "admin.deleteUser": def(z.object({ userId: uuid }), async (input, ctx) => {
+    await assertAdmin(ctx.userId);
+    if (input.userId === ctx.userId) {
+      throw new Error("You cannot delete your own account");
+    }
+    const [target] = await db
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .limit(1);
+    if (!target) throw new Error("User not found");
+    await db.delete(users).where(eq(users.id, input.userId));
+    await audit(ctx.userId, "user.delete", "user", input.userId, { email: target.email });
+    return { ok: true };
+  }),
+
+  "admin.resetUserPassword": def(
+    z.object({ userId: uuid }),
+    async (input, ctx) => {
+      await assertAdmin(ctx.userId);
+      const [target] = await db
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+      if (!target) throw new Error("User not found");
+
+      const RESET_TTL_MINUTES = 30;
+      const { randomBytes } = await import("node:crypto");
+      const bcrypt = (await import("bcryptjs")).default;
+      const raw = randomBytes(32).toString("base64url");
+      const tokenHash = await bcrypt.hash(raw, 8);
+      const expiresAt = new Date(Date.now() + RESET_TTL_MINUTES * 60 * 1000);
+      const [tokenRow] = await db
+        .insert(passwordResetTokens)
+        .values({ userId: target.id, tokenHash, expiresAt })
+        .returning({ id: passwordResetTokens.id });
+
+      const [actorProfile] = await db
+        .select({ fullName: profiles.fullName })
+        .from(profiles)
+        .where(eq(profiles.id, ctx.userId))
+        .limit(1);
+      const actorName = actorProfile?.fullName ?? ctx.email;
+      const appUrl = process.env.APP_URL ?? "";
+      const link = `${appUrl}/reset-password?id=${tokenRow.id}&token=${raw}`;
+
+      let emailSent = true;
+      try {
+        await sendEmail({
+          to: target.email,
+          subject: "Your Progress Tracking password has been reset",
+          userId: target.id,
+          html: `
+            <p>Hello,</p>
+            <p>An administrator (${actorName}) has initiated a password reset for your account.</p>
+            <p>Click the link below to choose a new password — it expires in ${RESET_TTL_MINUTES} minutes.</p>
+            <p><a href="${link}">${link}</a></p>
+            <p>If you did not expect this change, contact your project administrator right away.</p>
+          `,
+        });
+      } catch {
+        emailSent = false;
+      }
+
+      await audit(ctx.userId, "user.passwordReset", "user", input.userId, { email: target.email });
+      return { email: target.email, emailSent, expiresAt: expiresAt.toISOString() };
+    },
+  ),
+
+  "admin.passwordResetHistory": def(
+    z.object({ limit: z.number().int().min(1).max(200).optional() }),
+    async (input, ctx) => {
+      await assertAdmin(ctx.userId);
+      const rows = await db
+        .select({
+          id: auditLog.id,
+          actorId: auditLog.actorId,
+          targetUserId: auditLog.entityId,
+          metadata: auditLog.metadata,
+          createdAt: auditLog.createdAt,
+        })
+        .from(auditLog)
+        .where(eq(auditLog.action, "user.passwordReset"))
+        .orderBy(desc(auditLog.createdAt))
+        .limit(input.limit ?? 50);
+      const actorIds = Array.from(
+        new Set(rows.map((r) => r.actorId).filter((v): v is string => Boolean(v))),
+      );
+      const actorRows = actorIds.length
+        ? await db
+            .select({ id: profiles.id, fullName: profiles.fullName, email: users.email })
+            .from(profiles)
+            .leftJoin(users, eq(users.id, profiles.id))
+            .where(inArray(profiles.id, actorIds))
+        : [];
+      const actorMap = new Map(actorRows.map((a) => [a.id, a]));
+      return rows.map((r) => ({
+        id: r.id,
+        targetEmail:
+          (r.metadata as { email?: string } | null)?.email ?? null,
+        targetUserId: r.targetUserId,
+        actorName: r.actorId ? actorMap.get(r.actorId)?.fullName ?? null : null,
+        actorEmail: r.actorId ? actorMap.get(r.actorId)?.email ?? null : null,
+        createdAt: r.createdAt,
+      }));
+    },
+  ),
+
+  "admin.listAllDocuments": def(z.object({}).optional(), async (_input, ctx) => {
+    await assertAdmin(ctx.userId);
+    return db
+      .select({
+        id: documents.id,
+        projectId: documents.projectId,
+        projectName: projects.name,
+        projectCode: projects.code,
+        title: documents.title,
+        category: documents.category,
+        filePath: documents.filePath,
+        fileSizeBytes: documents.fileSizeBytes,
+        mimeType: documents.mimeType,
+        version: documents.version,
+        uploaderId: documents.uploaderId,
+        createdAt: documents.createdAt,
+      })
+      .from(documents)
+      .innerJoin(projects, eq(projects.id, documents.projectId))
+      .orderBy(desc(documents.createdAt));
+  }),
 
   "admin.notif.templates": def(z.object({}).optional(), async (_input, ctx) => {
     await assertAdmin(ctx.userId);

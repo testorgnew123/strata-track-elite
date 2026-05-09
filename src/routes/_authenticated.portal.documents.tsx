@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Eye } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
 import { fetchUserPrimaryProject } from "@/lib/portal-data";
@@ -33,12 +33,27 @@ function DocsPage() {
     })();
   }, []);
 
-  const open = async (id: string) => {
+  const view = async (id: string) => {
     try {
-      const { url } = await rpc("documents.signedUrl", { id });
-      window.open(url, "_blank");
+      const { viewUrl } = await rpc("documents.signedUrl", { id });
+      window.open(viewUrl, "_blank", "noopener,noreferrer");
     } catch {
       toast.error("Could not open this file.");
+    }
+  };
+
+  const download = async (id: string) => {
+    try {
+      const { downloadUrl, filename } = await rpc("documents.signedUrl", { id });
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename ?? "";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      toast.error("Could not download this file.");
     }
   };
 
@@ -72,10 +87,16 @@ function DocsPage() {
                 </p>
               </div>
               <button
-                onClick={() => open(d.id)}
+                onClick={() => view(d.id)}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary"
               >
-                <Download size={14} /> Open
+                <Eye size={14} /> View
+              </button>
+              <button
+                onClick={() => download(d.id)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary"
+              >
+                <Download size={14} /> Download
               </button>
             </Card>
           ))}

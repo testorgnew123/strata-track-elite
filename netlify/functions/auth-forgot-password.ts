@@ -40,17 +40,28 @@ export default async (req: Request, _ctx: Context) => {
 
   const link = `${process.env.APP_URL ?? ""}/reset-password?id=${row.id}&token=${raw}`;
 
-  await sendEmail({
-    to: email,
-    subject: "Reset your Strata password",
-    userId: user.id,
-    html: `
-      <p>Hello,</p>
-      <p>We received a request to reset your password. Click the link below — it expires in ${RESET_TTL_MINUTES} minutes.</p>
-      <p><a href="${link}">${link}</a></p>
-      <p>If you did not request a password reset, you can ignore this email.</p>
-    `,
-  });
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Reset your Strata password",
+      userId: user.id,
+      html: `
+        <p>Hello,</p>
+        <p>We received a request to reset your password. Click the link below — it expires in ${RESET_TTL_MINUTES} minutes.</p>
+        <p><a href="${link}">${link}</a></p>
+        <p>If you did not request a password reset, you can ignore this email.</p>
+      `,
+    });
+    console.log(`[forgot-password] reset email dispatched to ${email}`);
+  } catch (err) {
+    console.error(
+      `[forgot-password] sendEmail failed for ${email}:`,
+      err instanceof Error ? err.stack ?? err.message : err,
+    );
+    // Surface failure so the operator notices but never reveal whether the
+    // address exists; keep the generic ok response shape from above.
+    return Response.json({ ok: true, deliveryError: true }, { status: 200 });
+  }
 
   return Response.json({ ok: true });
 };

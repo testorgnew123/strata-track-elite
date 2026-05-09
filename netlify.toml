@@ -18,6 +18,11 @@
   directory = "netlify/functions"
   included_files = ["drizzle/**", "src/db/**", "src/server/**"]
 
+# Edge function /api/upload-document self-registers via inline
+# `export const config = { path: ... }` — bypasses the ~6 MB sync function
+# body cap so documents up to 50 MB can be uploaded. Edge functions are
+# matched before redirects, so the /api/* fallback below does not interfere.
+
 # /api/* falls through to the Netlify v2 functions in netlify/functions/
 # which self-register their paths via `export const config = { path: ... }`.
 # Defensive fallback; force=false so it does not override TanStack Start's

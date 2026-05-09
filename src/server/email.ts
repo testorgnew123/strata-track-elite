@@ -3,6 +3,15 @@ import { db } from "@/db/client";
 import { emailLog } from "@/db/schema";
 import type { NotificationKind } from "@/db/schema/enums";
 
+function deriveEhloName(): string {
+  // Prefer the domain of SMTP_FROM, fall back to SMTP_USER, finally "localhost".
+  // Sending domain in EHLO is what Gmail aligns against PTR + SPF reputation.
+  const addr = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? "";
+  const at = addr.lastIndexOf("@");
+  if (at > -1) return addr.slice(at + 1).trim() || "localhost";
+  return "localhost";
+}
+
 function createTransport() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST ?? "mail.hostgator.com",
@@ -12,6 +21,9 @@ function createTransport() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // EHLO with sender domain instead of default "[127.0.0.1]" — Gmail and other
+    // major MTAs downrank or quarantine messages whose EHLO is a literal IP.
+    name: process.env.SMTP_EHLO_NAME ?? deriveEhloName(),
   });
 }
 
