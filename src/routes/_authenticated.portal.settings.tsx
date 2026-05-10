@@ -5,7 +5,6 @@ import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
 import { usePortalProject } from "@/lib/portal-project-context";
 import { useAuth } from "@/lib/auth-context";
-import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,6 @@ export const Route = createFileRoute("/_authenticated/portal/settings")({
 
 function SettingsPage() {
   const { user, profile, refresh } = useAuth();
-  const { lang, setLang } = useI18n();
   const { selectedProject: project, loading: projectLoading } = usePortalProject();
   const [rated, setRated] = useState<Output<"ratings.get">>(null);
   const [fullName, setFullName] = useState(profile?.fullName ?? "");
@@ -54,7 +52,7 @@ function SettingsPage() {
   const saveProfile = async () => {
     if (!user) return;
     try {
-      await rpc("me.updateProfile", { fullName, mobile, language: lang });
+      await rpc("me.updateProfile", { fullName, mobile, language: "en" });
       toast.success("Profile saved");
       refresh();
     } catch (e) {
@@ -116,27 +114,6 @@ function SettingsPage() {
           <div className="space-y-2">
             <Label>Email</Label>
             <Input value={user?.email ?? ""} disabled />
-          </div>
-          <div className="space-y-2">
-            <Label>Language</Label>
-            <div className="flex gap-2">
-              <Button
-                variant={lang === "en" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setLang("en")}
-                className={lang === "en" ? "bg-navy-deep text-ivory hover:bg-navy" : ""}
-              >
-                English
-              </Button>
-              <Button
-                variant={lang === "hi" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setLang("hi")}
-                className={lang === "hi" ? "bg-navy-deep text-ivory hover:bg-navy" : ""}
-              >
-                हिंदी
-              </Button>
-            </div>
           </div>
         </div>
         <Button onClick={saveProfile} className="mt-5 bg-navy-deep text-ivory hover:bg-navy">

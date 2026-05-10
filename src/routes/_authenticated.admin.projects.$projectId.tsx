@@ -1,6 +1,18 @@
 import { createFileRoute, useParams, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, Loader2, Plus, Trash2, UserPlus, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  Download,
+  Loader2,
+  Plus,
+  RotateCcw,
+  Trash2,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
 import { getAccessToken } from "@/lib/api-client";
@@ -39,6 +51,7 @@ function ProjectDetail() {
   const [members, setMembers] = useState<Output<"members.list">>([]);
   const [milestones, setMilestones] = useState<Output<"milestones.list">>([]);
   const [profiles, setProfiles] = useState<Output<"admin.listProfiles">>([]);
+  const [readiness, setReadiness] = useState<Output<"readiness.list">>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -49,19 +62,23 @@ function ProjectDetail() {
   const [msDescription, setMsDescription] = useState("");
   const [msTargetDate, setMsTargetDate] = useState("");
   const [addingMs, setAddingMs] = useState(false);
+  const [rdTitle, setRdTitle] = useState("");
+  const [addingRd, setAddingRd] = useState(false);
 
   const load = async () => {
     try {
-      const [p, pm, ms, profs] = await Promise.all([
+      const [p, pm, ms, profs, rd] = await Promise.all([
         rpc("projects.get", { projectId }),
         rpc("members.list", { projectId }),
         rpc("milestones.list", { projectId }),
         rpc("admin.listProfiles"),
+        rpc("readiness.list", { projectId }),
       ]);
       setProject(p);
       setMembers(pm);
       setMilestones(ms);
       setProfiles(profs);
+      setReadiness(rd);
     } finally {
       setLoading(false);
     }
@@ -137,6 +154,61 @@ function ProjectDetail() {
       load();
     } catch (e) {
       toast.error((e as Error).message);
+    }
+  };
+
+  const addReadiness = async () => {
+    const title = rdTitle.trim();
+    if (!title) return;
+    setAddingRd(true);
+    try {
+      await rpc("readiness.create", { projectId, title });
+      toast.success("Checklist item added");
+      setRdTitle("");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAddingRd(false);
+    }
+  };
+
+  const toggleReadinessStatus = async (id: string, current: "pending" | "done" | "na") => {
+    const next = current === "done" ? "pending" : "done";
+    try {
+      await rpc("readiness.update", { id, patch: { status: next } });
+      toast.success(next === "done" ? "Marked complete" : "Reopened");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const deleteReadiness = async (id: string) => {
+    try {
+      await rpc("readiness.delete", { id });
+      toast.success("Item removed");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const moveReadiness = async (id: string, dir: -1 | 1) => {
+    const idx = readiness.findIndex((r) => r.id === id);
+    const swap = idx + dir;
+    if (idx < 0 || swap < 0 || swap >= readiness.length) return;
+    const next = [...readiness];
+    [next[idx], next[swap]] = [next[swap], next[idx]];
+    setReadiness(next);
+    try {
+      await rpc("readiness.reorder", {
+        projectId,
+        orderedIds: next.map((r) => r.id),
+      });
+    } catch (e) {
+      toast.error((e as Error).message);
+      load();
     }
   };
 
@@ -410,6 +482,87 @@ function ProjectDetail() {
           ))}
           {milestones.length === 0 && (
             <p className="text-center text-xs text-muted-foreground">No milestones yet.</p>
+          )}
+        </ol>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg text-navy-deep">Handover checklist</h2>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <Input
+            value={rdTitle}
+            onChange={(e) => setRdTitle(e.target.value)}
+            placeholder="New checklist item"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addReadiness();
+            }}
+          />
+          <Button
+            onClick={addReadiness}
+            disabled={!rdTitle.trim() || addingRd}
+            className="bg-navy-deep text-ivory hover:bg-navy"
+          >
+            {addingRd ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+            Add
+          </Button>
+        </div>
+        <ol className="mt-4 space-y-2">
+          {readiness.map((r, i) => (
+            <li key={r.id} className="rounded-md border border-border p-3 text-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+                <span className="min-w-0 flex-1 break-words text-navy-deep">{r.title}</span>
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
+                  <Badge
+                    variant={r.status === "done" ? "default" : "secondary"}
+                    className="shrink-0 capitalize"
+                  >
+                    {r.status}
+                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant={r.status === "done" ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => toggleReadinessStatus(r.id, r.status)}
+                      className={r.status === "done" ? "" : "bg-navy-deep text-ivory hover:bg-navy"}
+                    >
+                      {r.status === "done" ? (
+                        <>
+                          <RotateCcw size={14} /> Reopen
+                        </>
+                      ) : (
+                        <>
+                          <Check size={14} /> Complete
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === 0}
+                      onClick={() => moveReadiness(r.id, -1)}
+                    >
+                      <ArrowUp size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={i === readiness.length - 1}
+                      onClick={() => moveReadiness(r.id, 1)}
+                    >
+                      <ArrowDown size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteReadiness(r.id)}>
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </li>
+          ))}
+          {readiness.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground">No checklist items yet.</p>
           )}
         </ol>
       </Card>

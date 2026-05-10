@@ -40,7 +40,7 @@ function AdminAudit() {
       ) : (
         <div className="space-y-2">
           {rows.map((r) => (
-            <Card key={r.id} className="flex items-center justify-between p-3 text-xs">
+            <Card key={r.id} className="flex flex-wrap items-center justify-between gap-2 p-3 text-xs">
               <div>
                 <p className="font-medium text-navy-deep">{r.action}</p>
                 <p className="text-muted-foreground">

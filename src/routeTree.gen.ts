@@ -28,9 +28,8 @@ import { Route as AuthenticatedPortalQueriesRouteImport } from './routes/_authen
 import { Route as AuthenticatedPortalProgressRouteImport } from './routes/_authenticated.portal.progress'
 import { Route as AuthenticatedPortalMilestonesRouteImport } from './routes/_authenticated.portal.milestones'
 import { Route as AuthenticatedPortalDocumentsRouteImport } from './routes/_authenticated.portal.documents'
-import { Route as AuthenticatedFieldUploadRouteImport } from './routes/_authenticated.field.upload'
 import { Route as AuthenticatedFieldQueriesRouteImport } from './routes/_authenticated.field.queries'
-import { Route as AuthenticatedFieldMilestonesRouteImport } from './routes/_authenticated.field.milestones'
+import { Route as AuthenticatedFieldProgressRouteImport } from './routes/_authenticated.field.progress'
 import { Route as AuthenticatedAdminVisitsRouteImport } from './routes/_authenticated.admin.visits'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated.admin.users'
 import { Route as AuthenticatedAdminProjectsRouteImport } from './routes/_authenticated.admin.projects'
@@ -143,22 +142,16 @@ const AuthenticatedPortalDocumentsRoute =
     path: '/documents',
     getParentRoute: () => AuthenticatedPortalRoute,
   } as any)
-const AuthenticatedFieldUploadRoute =
-  AuthenticatedFieldUploadRouteImport.update({
-    id: '/upload',
-    path: '/upload',
-    getParentRoute: () => AuthenticatedFieldRoute,
-  } as any)
 const AuthenticatedFieldQueriesRoute =
   AuthenticatedFieldQueriesRouteImport.update({
     id: '/queries',
     path: '/queries',
     getParentRoute: () => AuthenticatedFieldRoute,
   } as any)
-const AuthenticatedFieldMilestonesRoute =
-  AuthenticatedFieldMilestonesRouteImport.update({
-    id: '/milestones',
-    path: '/milestones',
+const AuthenticatedFieldProgressRoute =
+  AuthenticatedFieldProgressRouteImport.update({
+    id: '/progress',
+    path: '/progress',
     getParentRoute: () => AuthenticatedFieldRoute,
   } as any)
 const AuthenticatedAdminVisitsRoute =
@@ -222,9 +215,8 @@ export interface FileRoutesByFullPath {
   '/admin/projects': typeof AuthenticatedAdminProjectsRouteWithChildren
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/visits': typeof AuthenticatedAdminVisitsRoute
-  '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/field/progress': typeof AuthenticatedFieldProgressRoute
   '/field/queries': typeof AuthenticatedFieldQueriesRoute
-  '/field/upload': typeof AuthenticatedFieldUploadRoute
   '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
   '/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
   '/portal/progress': typeof AuthenticatedPortalProgressRoute
@@ -249,9 +241,8 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AuthenticatedAdminNotificationsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/visits': typeof AuthenticatedAdminVisitsRoute
-  '/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/field/progress': typeof AuthenticatedFieldProgressRoute
   '/field/queries': typeof AuthenticatedFieldQueriesRoute
-  '/field/upload': typeof AuthenticatedFieldUploadRoute
   '/portal/documents': typeof AuthenticatedPortalDocumentsRoute
   '/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
   '/portal/progress': typeof AuthenticatedPortalProgressRoute
@@ -282,9 +273,8 @@ export interface FileRoutesById {
   '/_authenticated/admin/projects': typeof AuthenticatedAdminProjectsRouteWithChildren
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/visits': typeof AuthenticatedAdminVisitsRoute
-  '/_authenticated/field/milestones': typeof AuthenticatedFieldMilestonesRoute
+  '/_authenticated/field/progress': typeof AuthenticatedFieldProgressRoute
   '/_authenticated/field/queries': typeof AuthenticatedFieldQueriesRoute
-  '/_authenticated/field/upload': typeof AuthenticatedFieldUploadRoute
   '/_authenticated/portal/documents': typeof AuthenticatedPortalDocumentsRoute
   '/_authenticated/portal/milestones': typeof AuthenticatedPortalMilestonesRoute
   '/_authenticated/portal/progress': typeof AuthenticatedPortalProgressRoute
@@ -315,9 +305,8 @@ export interface FileRouteTypes {
     | '/admin/projects'
     | '/admin/users'
     | '/admin/visits'
-    | '/field/milestones'
+    | '/field/progress'
     | '/field/queries'
-    | '/field/upload'
     | '/portal/documents'
     | '/portal/milestones'
     | '/portal/progress'
@@ -342,9 +331,8 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/users'
     | '/admin/visits'
-    | '/field/milestones'
+    | '/field/progress'
     | '/field/queries'
-    | '/field/upload'
     | '/portal/documents'
     | '/portal/milestones'
     | '/portal/progress'
@@ -374,9 +362,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/projects'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/visits'
-    | '/_authenticated/field/milestones'
+    | '/_authenticated/field/progress'
     | '/_authenticated/field/queries'
-    | '/_authenticated/field/upload'
     | '/_authenticated/portal/documents'
     | '/_authenticated/portal/milestones'
     | '/_authenticated/portal/progress'
@@ -535,13 +522,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortalDocumentsRouteImport
       parentRoute: typeof AuthenticatedPortalRoute
     }
-    '/_authenticated/field/upload': {
-      id: '/_authenticated/field/upload'
-      path: '/upload'
-      fullPath: '/field/upload'
-      preLoaderRoute: typeof AuthenticatedFieldUploadRouteImport
-      parentRoute: typeof AuthenticatedFieldRoute
-    }
     '/_authenticated/field/queries': {
       id: '/_authenticated/field/queries'
       path: '/queries'
@@ -549,11 +529,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFieldQueriesRouteImport
       parentRoute: typeof AuthenticatedFieldRoute
     }
-    '/_authenticated/field/milestones': {
-      id: '/_authenticated/field/milestones'
-      path: '/milestones'
-      fullPath: '/field/milestones'
-      preLoaderRoute: typeof AuthenticatedFieldMilestonesRouteImport
+    '/_authenticated/field/progress': {
+      id: '/_authenticated/field/progress'
+      path: '/progress'
+      fullPath: '/field/progress'
+      preLoaderRoute: typeof AuthenticatedFieldProgressRouteImport
       parentRoute: typeof AuthenticatedFieldRoute
     }
     '/_authenticated/admin/visits': {
@@ -656,16 +636,14 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedFieldRouteChildren {
-  AuthenticatedFieldMilestonesRoute: typeof AuthenticatedFieldMilestonesRoute
+  AuthenticatedFieldProgressRoute: typeof AuthenticatedFieldProgressRoute
   AuthenticatedFieldQueriesRoute: typeof AuthenticatedFieldQueriesRoute
-  AuthenticatedFieldUploadRoute: typeof AuthenticatedFieldUploadRoute
   AuthenticatedFieldIndexRoute: typeof AuthenticatedFieldIndexRoute
 }
 
 const AuthenticatedFieldRouteChildren: AuthenticatedFieldRouteChildren = {
-  AuthenticatedFieldMilestonesRoute: AuthenticatedFieldMilestonesRoute,
+  AuthenticatedFieldProgressRoute: AuthenticatedFieldProgressRoute,
   AuthenticatedFieldQueriesRoute: AuthenticatedFieldQueriesRoute,
-  AuthenticatedFieldUploadRoute: AuthenticatedFieldUploadRoute,
   AuthenticatedFieldIndexRoute: AuthenticatedFieldIndexRoute,
 }
 

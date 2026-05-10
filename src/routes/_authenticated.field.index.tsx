@@ -97,14 +97,14 @@ function FieldDashboard() {
 
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   <QuickLink
-                    to="/field/upload"
+                    to="/field/progress"
                     projectId={p.id}
                     icon={Camera}
                     value={s.photos}
                     label="Photos today"
                   />
                   <QuickLink
-                    to="/field/milestones"
+                    to="/field/progress"
                     projectId={p.id}
                     icon={ListChecks}
                     value={s.openMs}

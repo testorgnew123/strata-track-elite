@@ -257,12 +257,12 @@ function Bubble({ author, body, mine }: { author: string; body: string; mine?: b
   return (
     <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+        className={`max-w-[85%] break-words rounded-2xl px-4 py-2.5 text-sm sm:max-w-[80%] ${
           mine ? "bg-navy-deep text-ivory" : "bg-secondary text-navy-deep"
         }`}
       >
         <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{author}</p>
-        <p className="mt-0.5 whitespace-pre-wrap">{body}</p>
+        <p className="mt-0.5 whitespace-pre-wrap break-words">{body}</p>
       </div>
     </div>
   );

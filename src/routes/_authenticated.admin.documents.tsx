@@ -267,18 +267,18 @@ function AdminDocuments() {
       ) : (
         <div className="grid gap-3">
           {docs.map((d) => (
-            <Card key={d.id} className="flex items-center gap-4 p-4">
-              <div className="grid h-12 w-12 place-items-center rounded-md bg-secondary text-navy-deep">
+            <Card key={d.id} className="flex flex-wrap items-center gap-3 p-4 sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-secondary text-navy-deep">
                 <FileText size={20} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="truncate font-medium text-navy-deep">{d.title}</h3>
                   <Badge variant="secondary" className="text-[10px] capitalize">
                     {d.category.replace("_", " ")}
                   </Badge>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground break-words">
                   {d.projectCode} — {d.projectName} · v{d.version} · {formatBytes(d.fileSizeBytes)}{" "}
                   · {new Date(d.createdAt).toLocaleDateString()}
                 </p>

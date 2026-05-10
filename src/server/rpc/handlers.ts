@@ -910,6 +910,70 @@ export const handlers = {
     },
   ),
 
+  "readiness.create": def(
+    z.object({
+      projectId: uuid,
+      title: z.string().min(1),
+      sortOrder: z.number().int().optional(),
+    }),
+    async (input, ctx) => {
+      await assertProjectEngineer(ctx.userId, input.projectId);
+      let sortOrder = input.sortOrder;
+      if (sortOrder === undefined) {
+        const [{ max }] = await db
+          .select({ max: sql<number>`coalesce(max(${readinessItems.sortOrder}), -1)` })
+          .from(readinessItems)
+          .where(eq(readinessItems.projectId, input.projectId));
+        sortOrder = (max ?? -1) + 1;
+      }
+      const [row] = await db
+        .insert(readinessItems)
+        .values({
+          projectId: input.projectId,
+          title: input.title,
+          sortOrder,
+        })
+        .returning();
+      return row;
+    },
+  ),
+
+  "readiness.delete": def(z.object({ id: uuid }), async (input, ctx) => {
+    const [item] = await db
+      .select()
+      .from(readinessItems)
+      .where(eq(readinessItems.id, input.id))
+      .limit(1);
+    if (!item) throw new Error("Not found");
+    await assertProjectEngineer(ctx.userId, item.projectId);
+    await db.delete(readinessItems).where(eq(readinessItems.id, input.id));
+    return { ok: true };
+  }),
+
+  "readiness.reorder": def(
+    z.object({
+      projectId: uuid,
+      orderedIds: z.array(uuid),
+    }),
+    async (input, ctx) => {
+      await assertProjectEngineer(ctx.userId, input.projectId);
+      await db.transaction(async (tx) => {
+        for (let i = 0; i < input.orderedIds.length; i++) {
+          await tx
+            .update(readinessItems)
+            .set({ sortOrder: i, updatedAt: new Date() })
+            .where(
+              and(
+                eq(readinessItems.id, input.orderedIds[i]),
+                eq(readinessItems.projectId, input.projectId),
+              ),
+            );
+        }
+      });
+      return { ok: true };
+    },
+  ),
+
   // ===== RATINGS =====
   "ratings.get": def(projectIdInput, async (input, ctx) => {
     await assertProjectMember(ctx.userId, input.projectId);
@@ -1216,7 +1280,7 @@ export const handlers = {
       try {
         await sendEmail({
           to: target.email,
-          subject: "Your Progress Tracking password has been reset",
+          subject: "Your Progress Tracker password has been reset",
           userId: target.id,
           html: `
             <p>Hello,</p>

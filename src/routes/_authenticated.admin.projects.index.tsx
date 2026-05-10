@@ -81,11 +81,13 @@ function AdminProjects() {
   };
 
   return (
-    <div className="space-y-6 animate-rise-in">
+    <div className="space-y-6 overflow-x-hidden animate-rise-in">
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">Projects</p>
-          <h1 className="mt-2 font-display text-3xl font-light text-navy-deep">All projects</h1>
+          <h1 className="mt-2 font-display text-2xl font-light text-navy-deep sm:text-3xl">
+            All projects
+          </h1>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -119,7 +121,7 @@ function AdminProjects() {
                   onChange={(e) => setForm({ ...form, address: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Start date</Label>
                   <Input
@@ -159,22 +161,26 @@ function AdminProjects() {
         <div className="grid gap-3">
           {projects.map((p) => (
             <Link key={p.id} to="/admin/projects/$projectId" params={{ projectId: p.id }}>
-              <Card className="p-5 transition-colors hover:border-gold/40">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+              <Card className="p-4 transition-colors hover:border-gold/40 sm:p-5">
+                <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+                  <div className="min-w-0 flex-1 basis-full sm:basis-0">
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
                       {p.code}
                     </p>
-                    <h3 className="font-display text-lg text-navy-deep">{p.name}</h3>
+                    <h3 className="break-words font-display text-base text-navy-deep sm:text-lg">
+                      {p.name}
+                    </h3>
                     {p.clientDisplayName && (
-                      <p className="text-xs text-muted-foreground">{p.clientDisplayName}</p>
+                      <p className="break-words text-xs text-muted-foreground">
+                        {p.clientDisplayName}
+                      </p>
                     )}
                   </div>
-                  <Badge variant="secondary" className="capitalize">
+                  <Badge variant="secondary" className="shrink-0 capitalize">
                     {projectStatusLabel[p.status] ?? p.status}
                   </Badge>
                 </div>
-                <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span>{p.progressPercent}%</span>
                   {p.expectedHandoverDate && (
                     <span>Handover: {new Date(p.expectedHandoverDate).toLocaleDateString()}</span>

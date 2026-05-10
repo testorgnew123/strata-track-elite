@@ -86,3 +86,24 @@ netlify-dev.log
 .history/
 tmp/
 temp/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+._*
+
+# Token / config dumps that sometimes leak
+*.token
+*.tokens
+.env.vault
+.envrc
+auth-token*
+access-token*
+refresh-token*
+gha-creds-*.json
+.dev.vars

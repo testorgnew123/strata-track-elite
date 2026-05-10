@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2, MailCheck } from "lucide-react";
 import loginVisual from "@/assets/login-visual.jpg";
 import { BrandMark } from "@/components/brand/BrandMark";
+import { Footer } from "@/components/portal/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,9 +155,7 @@ function ForgotPasswordPage() {
           </div>
         </div>
 
-        <div className="border-t border-border px-5 py-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} SingleStop Building Solutions
-        </div>
+        <Footer />
       </div>
     </div>
   );

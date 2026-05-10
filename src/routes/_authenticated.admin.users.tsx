@@ -309,10 +309,10 @@ function AdminUsers() {
           {rows.map((u) => {
             const isSelf = currentUser?.id === u.id;
             return (
-              <Card key={u.id} className="flex flex-wrap items-center justify-between gap-4 p-4">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-navy-deep">{u.fullName || "(no name)"}</p>
-                  <p className="text-xs text-muted-foreground">
+              <Card key={u.id} className="flex flex-wrap items-center justify-between gap-3 p-4 sm:gap-4">
+                <div className="min-w-0 flex-1 basis-full sm:basis-0">
+                  <p className="truncate font-medium text-navy-deep">{u.fullName || "(no name)"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
                     {u.email ?? u.mobile}
                     {isSelf && <span className="ml-2 text-gold">(you)</span>}
                   </p>
@@ -328,7 +328,7 @@ function AdminUsers() {
                     ))
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="ml-auto flex items-center gap-1">
                   <Button
                     size="sm"
                     variant="ghost"

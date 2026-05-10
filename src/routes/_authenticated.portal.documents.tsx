@@ -78,11 +78,11 @@ function DocsPage() {
       ) : (
         <div className="grid gap-3">
           {docs.map((d) => (
-            <Card key={d.id} className="flex items-center gap-4 p-4">
-              <div className="grid h-12 w-12 place-items-center rounded-md bg-secondary text-navy-deep">
+            <Card key={d.id} className="flex flex-wrap items-center gap-3 p-4 sm:gap-4">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-secondary text-navy-deep">
                 <FileText size={20} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="truncate font-medium text-navy-deep">{d.title}</h3>
                   <Badge variant="secondary" className="text-[10px] capitalize">
@@ -93,18 +93,20 @@ function DocsPage() {
                   v{d.version} · {new Date(d.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <button
-                onClick={() => view(d.id)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary"
-              >
-                <Eye size={14} /> View
-              </button>
-              <button
-                onClick={() => download(d.id)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary"
-              >
-                <Download size={14} /> Download
-              </button>
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                <button
+                  onClick={() => view(d.id)}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary sm:flex-none"
+                >
+                  <Eye size={14} /> View
+                </button>
+                <button
+                  onClick={() => download(d.id)}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-medium text-navy-deep transition-colors hover:bg-secondary sm:flex-none"
+                >
+                  <Download size={14} /> Download
+                </button>
+              </div>
             </Card>
           ))}
         </div>
