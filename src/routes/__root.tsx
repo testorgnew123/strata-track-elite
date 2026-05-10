@@ -32,11 +32,15 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SingleStop Client Portal" },
+      { title: "SingleStop Tracking Portal" },
       { name: "robots", content: "noindex, nofollow" },
       { name: "theme-color", content: "#0B1B33" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "shortcut icon", href: "/favicon.ico", type: "image/x-icon" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
