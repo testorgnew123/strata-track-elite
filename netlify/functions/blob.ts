@@ -47,9 +47,12 @@ export default async (req: Request, _ctx: Context) => {
     }
   }
 
-  const store = getStore(storeName);
+  const store = getStore({ name: storeName, consistency: "strong" });
   const blob = await store.get(key, { type: "arrayBuffer" });
-  if (!blob) return new Response("Not found", { status: 404 });
+  if (!blob) {
+    console.warn("blob 404", { storeName, key });
+    return new Response("Not found", { status: 404 });
+  }
   const meta = (await store.getMetadata(key)) ?? {};
   const contentType = (meta.metadata?.contentType as string) ?? "application/octet-stream";
 

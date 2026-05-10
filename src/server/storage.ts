@@ -9,7 +9,7 @@ const STORE_NAMES: Record<StoreKind, string> = {
 };
 
 export function blobStore(kind: StoreKind) {
-  return getStore(STORE_NAMES[kind]);
+  return getStore({ name: STORE_NAMES[kind], consistency: "strong" });
 }
 
 export async function putBlob(
