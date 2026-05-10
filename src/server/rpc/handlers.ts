@@ -570,12 +570,18 @@ export const handlers = {
     z.object({ projectId: uuid, limit: z.number().int().min(1).max(200).optional() }),
     async (input, ctx) => {
       await assertProjectMember(ctx.userId, input.projectId);
-      return db
+      const rows = await db
         .select()
         .from(progressUpdates)
         .where(eq(progressUpdates.projectId, input.projectId))
         .orderBy(desc(progressUpdates.takenAt))
         .limit(input.limit ?? 100);
+      return rows.map((r) => ({
+        ...r,
+        photoUrl: r.photoKey
+          ? `/api/blob?store=progress-photos&key=${encodeURIComponent(r.photoKey)}`
+          : r.photoUrl,
+      }));
     },
   ),
 

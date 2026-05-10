@@ -5,6 +5,7 @@ import { db } from "@/db/client";
 import { milestones, progressUpdates, projects } from "@/db/schema";
 import { verifyAccessToken } from "@/server/auth/jwt";
 import { assertProjectMember } from "@/server/authz";
+import { getBlobBytes } from "@/server/storage";
 
 const NAVY = rgb(0.043, 0.106, 0.2);
 const GOLD = rgb(0.788, 0.663, 0.38);
@@ -155,12 +156,20 @@ export const generateProjectReport = createServerFn({ method: "POST" })
       const tileH = 110;
       let col = 0;
       for (const ph of photos) {
-        if (!ph.photoUrl) continue;
+        if (!ph.photoKey && !ph.photoUrl) continue;
         try {
-          const res = await fetch(ph.photoUrl);
-          if (!res.ok) continue;
-          const buf = new Uint8Array(await res.arrayBuffer());
-          const isPng = ph.photoUrl.toLowerCase().includes(".png");
+          let buf: Uint8Array | null = null;
+          if (ph.photoKey) {
+            const ab = await getBlobBytes("photos", ph.photoKey);
+            if (ab) buf = new Uint8Array(ab);
+          }
+          if (!buf && ph.photoUrl && /^https?:\/\//.test(ph.photoUrl)) {
+            const res = await fetch(ph.photoUrl);
+            if (!res.ok) continue;
+            buf = new Uint8Array(await res.arrayBuffer());
+          }
+          if (!buf) continue;
+          const isPng = (ph.photoKey ?? ph.photoUrl ?? "").toLowerCase().includes(".png");
           const img = isPng ? await pdf.embedPng(buf) : await pdf.embedJpg(buf);
           const x = 50 + col * (tileW + 10);
           if (col === 0 && y < tileH + 60) {

@@ -4,7 +4,7 @@ import { db } from "../../src/db/client";
 import { progressUpdates } from "../../src/db/schema";
 import { buildContext } from "../../src/server/rpc/context";
 import { AuthError, assertProjectEngineer } from "../../src/server/authz";
-import { putBlob, getSignedDownloadUrl } from "../../src/server/storage";
+import { putBlob } from "../../src/server/storage";
 import { projects } from "../../src/db/schema";
 
 export default async (req: Request, _ctx: Context) => {
@@ -54,7 +54,7 @@ export default async (req: Request, _ctx: Context) => {
     uploadedBy: auth.userId,
   });
 
-  const url = await getSignedDownloadUrl("photos", key, 60 * 60 * 24 * 365);
+  const url = `/api/blob?store=progress-photos&key=${encodeURIComponent(key)}`;
 
   const [row] = await db
     .insert(progressUpdates)
