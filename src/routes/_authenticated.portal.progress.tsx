@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AuthedImage } from "@/components/ui/authed-image";
+import { AuthedMedia } from "@/components/ui/authed-media";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/portal/progress")({
@@ -121,7 +121,7 @@ function ProgressPage() {
               <Card key={u.id} className="overflow-hidden">
                 <div className="aspect-[4/3] overflow-hidden bg-muted">
                   {u.photoUrl && (
-                    <AuthedImage
+                    <AuthedMedia
                       src={u.photoUrl}
                       alt={u.caption ?? "Progress"}
                       className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"

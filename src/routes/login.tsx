@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import loginVisual from "@/assets/login-visual.jpg";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Footer } from "@/components/portal/Footer";
 import { Button } from "@/components/ui/button";
@@ -40,29 +39,32 @@ function LoginPage() {
 
 function VisualPanel() {
   return (
-    <aside className="relative hidden overflow-hidden lg:block">
-      <img
-        src={loginVisual}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover"
-        width={1080}
-        height={1920}
+    <aside className="relative hidden overflow-hidden bg-ivory lg:block">
+      <div className="absolute inset-0 bg-gradient-to-br from-ivory via-gold-soft/40 to-ivory" />
+      <div
+        className="absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(11,27,51,0.7) 1px, transparent 0)",
+          backgroundSize: "28px 28px",
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-navy-deep via-navy-deep/40 to-navy-deep/30" />
-      <div className="relative flex h-full flex-col justify-between p-12 text-ivory">
-        <BrandMark variant="light" />
+      <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-gold/30 blur-3xl" />
+      <div className="absolute -bottom-40 -left-20 h-[28rem] w-[28rem] rounded-full bg-gold-soft/50 blur-3xl" />
+      <div className="relative flex h-full flex-col justify-between p-12 text-navy-deep">
+        <BrandMark size="lg" />
 
         <div className="max-w-lg animate-rise-in">
           <div className="gold-divider w-16" />
           <h2 className="mt-6 font-display text-4xl font-light leading-tight text-balance xl:text-5xl">
             Secure access to your <em className="not-italic text-gold">SingleStop project</em>.
           </h2>
-          <p className="mt-6 text-base leading-relaxed text-ivory/70">
+          <p className="mt-6 text-base leading-relaxed text-navy-deep/70">
             Daily progress, milestones, and documents — in one place.
           </p>
         </div>
 
-        <p className="text-xs uppercase tracking-[0.22em] text-ivory/50">
+        <p className="text-xs uppercase tracking-[0.22em] text-navy-deep/50">
           Authorized users only · End-to-end encrypted
         </p>
       </div>

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Camera, Check, Loader2 } from "lucide-react";
+import { Camera, Check, Loader2, Video } from "lucide-react";
 import { rpc } from "@/lib/rpc";
 import type { Output } from "@/server/rpc/router";
 import { useAuth } from "@/lib/auth-context";
@@ -113,9 +113,14 @@ function ProgressSection({
     });
   }, [projectId]);
 
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
   const onPick = (f: File | null) => {
     setFile(f);
-    if (preview) URL.revokeObjectURL(preview);
     setPreview(f ? URL.createObjectURL(f) : null);
   };
 
@@ -132,7 +137,7 @@ function ProgressSection({
     }
   };
 
-  const submitPhoto = async () => {
+  const submitUpdate = async () => {
     if (!file || !userId || !projectId) return;
     setSubmitting(true);
     try {
@@ -140,25 +145,28 @@ function ProgressSection({
       if (!project) throw new Error("No project selected");
 
       let toUpload: File = file;
-      try {
-        toUpload = await watermarkImage(file, project.code ?? "PROJECT");
-      } catch {
-        // fall back to original file
+      if (file.type.startsWith("image/")) {
+        try {
+          toUpload = await watermarkImage(file, project.code ?? "PROJECT");
+        } catch {
+          // fall back to original file
+        }
       }
-
-      const form = new FormData();
-      form.append("projectId", projectId);
-      form.append("category", category);
-      if (caption) form.append("caption", caption);
-      form.append("file", toUpload);
 
       let token = getAccessToken();
       if (!token) token = await refreshAccessToken();
-      const res = await fetch("/api/upload-photo", {
+      const fd = new FormData();
+      fd.append("projectId", projectId);
+      fd.append("category", category);
+      if (caption) fd.append("caption", caption);
+      fd.append("file", toUpload, toUpload.name);
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`/api/upload-photo`, {
         method: "POST",
         credentials: "include",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: form,
+        headers,
+        body: fd,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -180,7 +188,7 @@ function ProgressSection({
       <div>
         <h2 className="font-display text-lg text-navy-deep">Mark progress</h2>
         <p className="text-xs text-muted-foreground">
-          Update overall percent and post a photo update.
+          Update overall percent and post a photo or video update.
         </p>
       </div>
 
@@ -219,17 +227,31 @@ function ProgressSection({
       <Card className="p-5">
         <label className="flex aspect-[4/3] w-full cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 border-dashed border-border bg-secondary/40">
           {preview ? (
-            <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+            file?.type.startsWith("video/") ? (
+              <video
+                src={preview}
+                className="h-full w-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+            )
           ) : (
             <div className="text-center">
-              <Camera size={28} className="mx-auto text-muted-foreground" />
-              <p className="mt-2 text-xs text-muted-foreground">Tap to take or pick a photo</p>
+              <div className="mx-auto flex items-center justify-center gap-2 text-muted-foreground">
+                <Camera size={26} />
+                <Video size={26} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Tap to upload a photo or video
+              </p>
             </div>
           )}
           <input
             type="file"
-            accept="image/*"
-            capture="environment"
+            accept="image/*,video/*"
             className="hidden"
             onChange={(e) => onPick(e.target.files?.[0] ?? null)}
           />
@@ -265,7 +287,7 @@ function ProgressSection({
           </div>
 
           <Button
-            onClick={submitPhoto}
+            onClick={submitUpdate}
             disabled={!file || !projectId || submitting}
             className="w-full bg-navy-deep text-ivory hover:bg-navy"
           >

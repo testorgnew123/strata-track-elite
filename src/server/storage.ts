@@ -15,7 +15,7 @@ export function blobStore(kind: StoreKind) {
 export async function putBlob(
   kind: StoreKind,
   key: string,
-  body: Uint8Array | ArrayBuffer | string,
+  body: Uint8Array | ArrayBuffer | Blob | string,
   metadata?: Record<string, string | number>,
 ): Promise<void> {
   const store = blobStore(kind);

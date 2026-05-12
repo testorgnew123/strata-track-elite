@@ -6,6 +6,26 @@ import { verifyBlobToken } from "../../src/server/auth/blob-token";
 
 const ALLOWED = new Set(["progress-photos", "project-documents", "avatars"]);
 
+const EXT_TO_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  mp4: "video/mp4",
+  m4v: "video/x-m4v",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  ogv: "video/ogg",
+  ogg: "video/ogg",
+  pdf: "application/pdf",
+};
+
+function mimeFromKey(key: string): string | null {
+  const ext = key.match(/\.([a-z0-9]+)(?:$|[?#])/i)?.[1]?.toLowerCase();
+  return ext ? (EXT_TO_MIME[ext] ?? null) : null;
+}
+
 function encodeRfc5987(value: string): string {
   return encodeURIComponent(value)
     .replace(/['()]/g, escape)
@@ -54,7 +74,24 @@ export default async (req: Request, _ctx: Context) => {
     return new Response("Not found", { status: 404 });
   }
   const meta = (await store.getMetadata(key)) ?? {};
-  const contentType = (meta.metadata?.contentType as string) ?? "application/octet-stream";
+  const metaContentType = meta.metadata?.contentType as string | undefined;
+  const inferred = mimeFromKey(key);
+  const contentType =
+    metaContentType && metaContentType !== "application/octet-stream"
+      ? metaContentType
+      : (inferred ?? metaContentType ?? "application/octet-stream");
+  const byteLength = (blob as ArrayBuffer).byteLength;
+  const firstBytes = new Uint8Array(blob as ArrayBuffer, 0, Math.min(8, byteLength));
+  const hex = Array.from(firstBytes).map((b) => b.toString(16).padStart(2, "0")).join(" ");
+  console.log("blob serve", {
+    storeName,
+    key,
+    byteLength,
+    metaContentType,
+    inferred,
+    contentType,
+    head: hex,
+  });
 
   const headers: Record<string, string> = {
     "Content-Type": contentType,

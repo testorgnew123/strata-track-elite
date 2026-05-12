@@ -10,7 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AuthedImage } from "@/components/ui/authed-image";
+import { AuthedMedia } from "@/components/ui/authed-media";
 
 export const Route = createFileRoute("/_authenticated/portal/")({
   component: PortalOverview,
@@ -154,7 +154,7 @@ function PortalOverview() {
               <Card className="overflow-hidden">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
                   {stats.recentPhoto.photoUrl && (
-                    <AuthedImage
+                    <AuthedMedia
                       src={stats.recentPhoto.photoUrl}
                       alt={stats.recentPhoto.caption ?? "Latest progress"}
                       className="h-full w-full object-cover"
