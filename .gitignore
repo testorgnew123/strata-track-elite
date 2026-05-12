@@ -88,7 +88,16 @@ tmp/
 temp/
 coverage/
 .turbo/
+.cache/
+.vite/
 *.tsbuildinfo
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# Caveman compress backups
+*.original.md
+*.original.json
+*.original.ts
 
 # OS junk
 Thumbs.db
